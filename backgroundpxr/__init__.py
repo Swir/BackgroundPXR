@@ -1,4 +1,4 @@
 """BackgroundPXR application package."""
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 APP_NAME = "BackgroundPXR"
-APP_SUBTITLE = "Power eXtreme Remover"
+APP_SUBTITLE = "AI Background Studio"
