@@ -1,71 +1,61 @@
-# BackgroundPXR 0.3.1 — Live Diagnostics
+# BackgroundPXR 0.3.2 — Runtime & Professional UI Hotfix
 
 ## English
 
-BackgroundPXR 0.3.1 focuses on visibility, reliability and easier troubleshooting during AI processing.
+BackgroundPXR 0.3.2 fixes the frozen Windows AI runtime and rebuilds the studio controls for 1600×900 / high-DPI displays.
 
-### Live processing status
-- A permanent numeric percentage is shown next to the progress bar.
-- The status line shows the current stage, current file and batch position.
-- Stages include opening the image, AI/model processing, edge refinement, composing the result and saving.
-- During long AI inference or first-time model loading, a live elapsed-seconds heartbeat updates every second so the app no longer looks frozen.
-- Batch percentage is calculated across the whole queue, not only the current file.
+### Critical AI runtime fix
+- Fixed `importlib.metadata.PackageNotFoundError: No package metadata was found for pymatting` in the Windows portable release.
+- `pymatting` is now an explicit application dependency.
+- The PyInstaller build uses a dedicated spec file and explicitly bundles distribution metadata required by `pymatting`, `rembg` and `onnxruntime`.
+- Every future Windows build now launches the finished `BackgroundPXR.exe --self-test-runtime` before packaging or publishing.
+- The frozen self-test imports the real AI stack and verifies package metadata from inside the EXE bundle.
+- If the runtime self-test fails, GitHub Actions prints its traceback and blocks the release.
+- AI import errors now describe the actual runtime dependency failure instead of incorrectly saying only that `requirements.txt` is missing.
 
-### Error diagnostics
-- New **LOG** button beside the progress/status area.
-- The LOG button turns red and displays the number of errors when something fails.
-- Single-image processing errors automatically open the diagnostics window.
-- Every technical error receives a report ID such as `PXR-20260910-...`.
-- Full exception type, message and traceback are saved locally instead of being hidden or printed only to the console.
-- Processing, composition and export failures are now surfaced to the user.
+### Professional 1600×900 layout fix
+- New `Professional UI` shell keeps the existing AI engine, manual mask editor and diagnostics while rebuilding the right-side studio controls.
+- Right panel is wider and uses compact professional spacing rather than vertically oversized cards.
+- AI Removal, Refine Edges, Manual Cleanup and Export are all visible together without overlapping.
+- Primary buttons retain minimum usable dimensions and no longer collapse into each other.
+- Brush Size and Brush Hardness are arranged side-by-side to save vertical space.
+- Export controls, progress percentage, LOG button and action buttons remain visible at the bottom.
+- Windows launches maximized by default.
+- Widget scaling is normalized on 900p/1080p high-DPI displays to prevent CustomTkinter from making the control stack taller than the available workspace.
 
-### Diagnostics window
-- Live session history in a dedicated dark PXR diagnostics window.
-- Copy the full report to clipboard with one click.
-- Open the local log folder directly from the app.
-- Clear the current log from the interface.
-- The persistent log is stored under the local BackgroundPXR application data folder.
-- Logs rotate automatically so the main log does not grow forever.
+### New release gate
+- The Windows GUI smoke test now forces a 1600×900 window and verifies that all four right-side cards fit inside the panel without overlap.
+- The smoke test also verifies minimum sizes for Remove, Restore, Erase, Export and Process All buttons.
 
-### Reliability
-- Added automated tests for progress calculation, persistent logging and error report IDs.
-- The Windows GUI smoke test now starts the diagnostics-enabled application and verifies the percentage and LOG controls exist.
-- Existing 0.3.0 Studio Editor features remain available: High Quality v2, alpha matting, Restore/Erase brushes, zoom, pan, Undo/Redo and manual mask cleanup.
-
-The percentage represents deterministic processing checkpoints and completed batch work. Neural-network inference itself does not expose a trustworthy frame-by-frame percentage, so BackgroundPXR shows the AI stage plus a live elapsed timer while that step is running rather than inventing fake progress.
+All Studio Editor features remain available: High Quality v2, Fast/Quality/Portrait models, alpha matting, Restore/Erase brushes, Smart Cleanup, Remove Leftovers, zoom, pan, Undo/Redo, live percentage and diagnostics LOG.
 
 ---
 
 ## Polski
 
-BackgroundPXR 0.3.1 koncentruje się na pełnej informacji o pracy programu, stabilności i łatwiejszym naprawianiu problemów.
+BackgroundPXR 0.3.2 naprawia silnik AI w gotowej paczce Windows oraz przebudowuje panel programu pod 1600×900 i skalowanie DPI Windows.
 
-### Status pracy na żywo
-- Obok paska postępu jest stale widoczny procent wykonania.
-- Linia statusu pokazuje aktualny etap, nazwę pliku i pozycję w kolejce.
-- Etapy obejmują: otwieranie zdjęcia, pracę AI/modelu, dopracowanie krawędzi, składanie wyniku i zapis.
-- Podczas długiego liczenia AI albo pierwszego pobierania/ładowania modelu co sekundę aktualizuje się licznik czasu, więc program nie wygląda jak zawieszony.
-- W trybie batch procent liczony jest dla całej kolejki, a nie tylko jednego zdjęcia.
+### Krytyczna naprawa silnika AI
+- Naprawiono błąd `importlib.metadata.PackageNotFoundError: No package metadata was found for pymatting` z wersji portable Windows.
+- `pymatting` jest teraz jawną zależnością programu.
+- PyInstaller korzysta z osobnego pliku spec i pakuje metadane wymagane przez `pymatting`, `rembg` oraz `onnxruntime`.
+- Każdy kolejny build Windows przed utworzeniem ZIP-a uruchamia gotowy `BackgroundPXR.exe --self-test-runtime`.
+- Self-test sprawdza prawdziwy stos AI i metadane pakietów już wewnątrz gotowego EXE.
+- Jeśli test runtime nie przejdzie, GitHub Actions pokazuje traceback i blokuje publikację release.
+- Błędy importu AI pokazują teraz rzeczywistą przyczynę problemu zamiast mylącego komunikatu o `requirements.txt`.
 
-### Diagnostyka błędów
-- Nowy przycisk **LOG** obok paska postępu i statusu.
-- Gdy pojawi się problem, LOG zmienia kolor na czerwony i pokazuje liczbę błędów.
-- Przy błędzie jednego przetwarzanego zdjęcia okno diagnostyczne otwiera się automatycznie.
-- Każdy błąd techniczny dostaje własny identyfikator, np. `PXR-20260910-...`.
-- Pełny typ wyjątku, komunikat i traceback są zapisywane lokalnie zamiast znikać albo trafiać wyłącznie do konsoli.
-- Błędy przetwarzania, składania obrazu i eksportu są teraz widoczne dla użytkownika.
+### Naprawa Professional UI 1600×900
+- Nowa warstwa `Professional UI` zachowuje działający silnik, edytor maski i diagnostykę, ale przebudowuje prawy panel programu.
+- Panel po prawej jest szerszy i ma zwarte, profesjonalne odstępy zamiast zbyt wysokich kart.
+- Usuwanie AI, Dopracuj krawędzie, Ręczne poprawki i Eksport są widoczne jednocześnie i nie nachodzą na siebie.
+- Najważniejsze przyciski zachowują minimalny użyteczny rozmiar i nie są zgniatane.
+- Rozmiar i twardość pędzla są ustawione obok siebie, dzięki czemu odzyskaliśmy miejsce w pionie.
+- Eksport, procent postępu, LOG i przyciski akcji pozostają widoczne na dole.
+- Na Windows program uruchamia się domyślnie zmaksymalizowany.
+- Na ekranach 900p/1080p normalizujemy skalowanie widgetów, żeby DPI Windows nie rozciągało panelu poza obszar programu.
 
-### Okno diagnostyczne
-- Historia bieżącej sesji w osobnym ciemnym oknie PXR.
-- Jednym kliknięciem można skopiować cały raport do schowka.
-- Z programu można bezpośrednio otworzyć folder z logami.
-- Można wyczyścić bieżący dziennik.
-- Log jest przechowywany lokalnie w danych aplikacji BackgroundPXR.
-- Log automatycznie się rotuje, żeby plik nie rósł bez końca.
+### Nowa blokada wadliwych wydań
+- Smoke test Windows wymusza teraz rozdzielczość 1600×900 i sprawdza, czy wszystkie cztery prawe karty mieszczą się bez nakładania.
+- Sprawdzana jest również minimalna wielkość przycisków Usuń tło, Przywróć, Usuń, Eksportuj i Przetwórz wszystkie.
 
-### Stabilność
-- Dodane testy obliczania procentów, zapisywania logów i identyfikatorów błędów.
-- Smoke test Windows uruchamia teraz wersję z diagnostyką i sprawdza, czy procent oraz przycisk LOG naprawdę powstały w GUI.
-- Wszystkie funkcje Studio Editor 0.3.0 pozostają: High Quality v2, alpha matting, pędzle Przywróć/Usuń, zoom, przesuwanie, Cofnij/Ponów i ręczne poprawki maski.
-
-Procent oznacza rzeczywiste, kontrolowane etapy przetwarzania oraz postęp kolejki. Samo liczenie sieci neuronowej nie udostępnia wiarygodnego procentu „w środku” operacji, dlatego podczas tego etapu BackgroundPXR pokazuje nazwę etapu i działający licznik sekund zamiast udawać fałszywy postęp.
+Pozostają wszystkie funkcje Studio Editor: High Quality v2, tryby Szybki/Jakość/Portret, alpha matting, pędzle Przywróć/Usuń, Smart Cleanup, Usuń resztki, zoom, przesuwanie, Cofnij/Ponów, procent postępu i pełny LOG diagnostyczny.
