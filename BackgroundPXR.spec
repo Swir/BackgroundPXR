@@ -7,19 +7,19 @@ datas = []
 binaries = []
 hiddenimports = []
 
-for package in ("customtkinter", "tkinterdnd2", "rembg", "pymatting"):
+# Collect the full GUI + AI runtime payload.  Keeping onnxruntime here in
+# addition to its PyInstaller hook makes the frozen-runtime contract explicit
+# and protects future dependency changes.
+for package in ("customtkinter", "tkinterdnd2", "rembg", "pymatting", "onnxruntime"):
     d, b, h = collect_all(package)
     datas += d
     binaries += b
     hiddenimports += h
 
-# pymatting calls importlib.metadata.version("pymatting") at import time.
-# PyInstaller code collection alone does not guarantee dist-info metadata.
+# pymatting reads its own installed version through importlib.metadata during
+# import.  Those *.dist-info directories must exist in the portable build.
 for package in ("pymatting", "rembg", "onnxruntime"):
-    try:
-        datas += copy_metadata(package)
-    except Exception:
-        pass
+    datas += copy_metadata(package)
 
 
 a = Analysis(
