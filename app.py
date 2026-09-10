@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import sys
+import traceback
 from importlib.metadata import version
+from pathlib import Path
 
 
 def runtime_self_test() -> None:
@@ -19,8 +21,14 @@ def runtime_self_test() -> None:
 
 def main() -> None:
     if "--self-test-runtime" in sys.argv:
-        runtime_self_test()
-        return
+        report = Path.cwd() / "backgroundpxr_runtime_selftest.txt"
+        try:
+            runtime_self_test()
+            report.write_text("OK\n", encoding="utf-8")
+            return
+        except Exception:
+            report.write_text(traceback.format_exc(), encoding="utf-8")
+            raise SystemExit(23)
 
     from backgroundpxr.pro_ui import BackgroundPXRProApp
     from backgroundpxr.ui import create_root
