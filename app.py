@@ -40,15 +40,12 @@ def runtime_self_test() -> None:
     version("onnxruntime")
 
     # Reproduce the exact writer used by pooch while rembg downloads a model.
-    # In a PyInstaller --windowed EXE this used to crash because stderr=None.
     probe = tqdm(total=1, file=sys.stderr, leave=False, desc="PXR runtime")
     probe.update(1)
     probe.close()
 
 
 def main() -> None:
-    # Must happen before rembg/pooch/tqdm can be reached. This is harmless when
-    # running from source because normal console streams are left untouched.
     ensure_writable_stdio()
 
     if "--self-test-runtime" in sys.argv:
@@ -61,11 +58,11 @@ def main() -> None:
             report.write_text(traceback.format_exc(), encoding="utf-8")
             raise SystemExit(23)
 
-    from backgroundpxr.studio_ui import BackgroundPXRStudioApp
+    from backgroundpxr.studio_v034 import BackgroundPXRStudio034App
     from backgroundpxr.ui import create_root
 
     root = create_root()
-    BackgroundPXRStudioApp(root)
+    BackgroundPXRStudio034App(root)
     root.mainloop()
 
 
