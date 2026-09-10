@@ -29,9 +29,10 @@ def test_supported_image_extensions():
 
 def test_process_options_defaults():
     opts = ProcessOptions()
-    assert opts.model_label == "Quality"
+    assert opts.model_label == "High Quality v2"
     assert opts.background_mode == "transparent"
     assert opts.canvas_preset == "Original"
+    assert opts.alpha_matting is True
 
 
 def test_canvas_sizes():
@@ -48,13 +49,24 @@ def test_place_subject_centers_alpha():
     assert out.getchannel("A").getbbox() is not None
 
 
+def test_compose_white_background():
+    engine = BackgroundEngine()
+    original = Image.new("RGBA", (40, 30), (255, 0, 0, 255))
+    cut = original.copy(); cut.putalpha(Image.new("L", (40, 30), 128))
+    out = engine.compose(original, cut, ProcessOptions(background_mode="white"))
+    assert out.size == (40, 30)
+    assert out.mode == "RGBA"
+
+
 def test_branding_icon():
     icon = create_icon_png(128)
     assert icon.size == (128, 128)
     assert icon.mode == "RGBA"
 
 
-def test_settings_defaults_have_brand_features():
+def test_settings_defaults_have_editor_features():
     assert DEFAULTS["output_suffix"] == "_pxr"
-    assert "auto_open_output" in DEFAULTS
+    assert DEFAULTS["model"] == "High Quality v2"
+    assert DEFAULTS["alpha_matting"] is True
+    assert "brush_size" in DEFAULTS
     assert DEFAULTS["output_dir"].endswith("BackgroundPXR")
