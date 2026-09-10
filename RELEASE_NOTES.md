@@ -1,99 +1,71 @@
-# BackgroundPXR 0.3.0 — Studio Editor
+# BackgroundPXR 0.3.1 — Live Diagnostics
 
 ## English
 
-BackgroundPXR 0.3.0 turns the app from a simple background remover into a local background-removal studio for Windows.
+BackgroundPXR 0.3.1 focuses on visibility, reliability and easier troubleshooting during AI processing.
 
-### New professional studio interface
-- New three-column layout inspired by a modern creative editor.
-- Left project panel with drag & drop, thumbnails and quick presets.
-- Large Before / After workspace with a dedicated editor toolbar.
-- Fixed right-side cards for AI Removal, Refine Edges, Manual Cleanup and Export.
-- Graphic PXR tool icons throughout the interface.
-- No full-interface scrolling; only the project file list scrolls when many files are added.
-- Permanent `by Swir` footer with a clickable `github.com/Swir` link.
+### Live processing status
+- A permanent numeric percentage is shown next to the progress bar.
+- The status line shows the current stage, current file and batch position.
+- Stages include opening the image, AI/model processing, edge refinement, composing the result and saving.
+- During long AI inference or first-time model loading, a live elapsed-seconds heartbeat updates every second so the app no longer looks frozen.
+- Batch percentage is calculated across the whole queue, not only the current file.
 
-### Better AI background removal
-- New **High Quality v2** mode based on the local BiRefNet general model.
-- Fine hair / alpha matting option for difficult edges.
-- Post-processed masks for cleaner cutouts.
-- Edge refinement controls: expand/shrink mask, feather and mask contrast.
-- Existing Quality, Fast and Portrait modes remain available.
+### Error diagnostics
+- New **LOG** button beside the progress/status area.
+- The LOG button turns red and displays the number of errors when something fails.
+- Single-image processing errors automatically open the diagnostics window.
+- Every technical error receives a report ID such as `PXR-20260910-...`.
+- Full exception type, message and traceback are saved locally instead of being hidden or printed only to the console.
+- Processing, composition and export failures are now surfaced to the user.
 
-### Manual Cleanup editor
-- **Restore brush** — bring back parts removed by AI.
-- **Erase brush** — remove background leftovers manually.
-- Adjustable brush size and hardness.
-- Mouse-wheel zoom from 25% to 800%.
-- Pan and Fit tools.
-- Undo / Redo history.
-- Smart Cleanup for small semi-transparent mask noise.
-- Remove Leftovers for small disconnected foreground islands.
-- Reset Mask returns to the original AI cutout.
-- Manual edits are non-destructive and do not rerun the AI model.
-
-### Background and export tools
-- Transparent, white, custom-color, custom-image and blurred-original backgrounds.
-- Product, Portrait, Object and Transparent quick presets.
-- PNG, JPG and WEBP export.
-- Original, 1:1, 4:5, 9:16, 16:9 and Product 2000×2000 canvases.
-- Custom filename suffix and output folder.
-- Optional automatic opening of the output folder.
-- Batch processing remains available.
+### Diagnostics window
+- Live session history in a dedicated dark PXR diagnostics window.
+- Copy the full report to clipboard with one click.
+- Open the local log folder directly from the app.
+- Clear the current log from the interface.
+- The persistent log is stored under the local BackgroundPXR application data folder.
+- Logs rotate automatically so the main log does not grow forever.
 
 ### Reliability
-- Expanded engine and manual-mask unit tests.
-- A real Windows GUI startup smoke test now constructs the full interface before a release is allowed to build.
-- The smoke test uses the same CustomTkinter major version as the release build.
+- Added automated tests for progress calculation, persistent logging and error report IDs.
+- The Windows GUI smoke test now starts the diagnostics-enabled application and verifies the percentage and LOG controls exist.
+- Existing 0.3.0 Studio Editor features remain available: High Quality v2, alpha matting, Restore/Erase brushes, zoom, pan, Undo/Redo and manual mask cleanup.
 
-The first use of an AI model may download its model file. Image processing then runs locally on the computer.
+The percentage represents deterministic processing checkpoints and completed batch work. Neural-network inference itself does not expose a trustworthy frame-by-frame percentage, so BackgroundPXR shows the AI stage plus a live elapsed timer while that step is running rather than inventing fake progress.
 
 ---
 
 ## Polski
 
-BackgroundPXR 0.3.0 zmienia program z prostego narzędzia do usuwania tła w lokalne studio edycji tła dla Windows.
+BackgroundPXR 0.3.1 koncentruje się na pełnej informacji o pracy programu, stabilności i łatwiejszym naprawianiu problemów.
 
-### Nowy profesjonalny interfejs
-- Nowy trzykolumnowy układ w stylu nowoczesnego programu graficznego.
-- Lewy panel projektu z drag & drop, miniaturami i szybkimi presetami.
-- Duży obszar Przed / Po z osobnym paskiem narzędzi edytora.
-- Stałe panele po prawej: Usuwanie AI, Dopracuj krawędzie, Ręczne poprawki i Eksport.
-- Graficzne ikony narzędzi PXR.
-- Brak przewijania całego interfejsu; przewija się wyłącznie lista plików, gdy jest ich dużo.
-- Stała stopka `by Swir` z klikalnym `github.com/Swir`.
+### Status pracy na żywo
+- Obok paska postępu jest stale widoczny procent wykonania.
+- Linia statusu pokazuje aktualny etap, nazwę pliku i pozycję w kolejce.
+- Etapy obejmują: otwieranie zdjęcia, pracę AI/modelu, dopracowanie krawędzi, składanie wyniku i zapis.
+- Podczas długiego liczenia AI albo pierwszego pobierania/ładowania modelu co sekundę aktualizuje się licznik czasu, więc program nie wygląda jak zawieszony.
+- W trybie batch procent liczony jest dla całej kolejki, a nie tylko jednego zdjęcia.
 
-### Dokładniejsze usuwanie tła AI
-- Nowy tryb **Najwyższa jakość v2** oparty na lokalnym modelu BiRefNet general.
-- Opcja alpha matting do włosów i trudnych krawędzi.
-- Dodatkowe czyszczenie maski po AI.
-- Regulacja maski: rozszerzanie/zwężanie, miękkość i kontrast.
-- Nadal dostępne tryby Jakość, Szybki i Portret.
+### Diagnostyka błędów
+- Nowy przycisk **LOG** obok paska postępu i statusu.
+- Gdy pojawi się problem, LOG zmienia kolor na czerwony i pokazuje liczbę błędów.
+- Przy błędzie jednego przetwarzanego zdjęcia okno diagnostyczne otwiera się automatycznie.
+- Każdy błąd techniczny dostaje własny identyfikator, np. `PXR-20260910-...`.
+- Pełny typ wyjątku, komunikat i traceback są zapisywane lokalnie zamiast znikać albo trafiać wyłącznie do konsoli.
+- Błędy przetwarzania, składania obrazu i eksportu są teraz widoczne dla użytkownika.
 
-### Ręczny edytor poprawek
-- **Przywróć** — odzyskuje fragmenty, które AI usunęło za mocno.
-- **Usuń** — ręcznie usuwa resztki tła.
-- Regulowany rozmiar i twardość pędzla.
-- Zoom kółkiem myszy od 25% do 800%.
-- Przesuwanie obrazu i Dopasuj.
-- Cofnij / Ponów.
-- Smart Cleanup do półprzezroczystych zabrudzeń maski.
-- Usuń resztki do małych odłączonych fragmentów tła.
-- Reset maski przywraca wynik AI.
-- Ręczne poprawki są niedestrukcyjne i nie uruchamiają ponownie modelu AI.
-
-### Tła i eksport
-- Tło przezroczyste, białe, własny kolor, własny obraz i rozmyty oryginał.
-- Presety Produkt, Portret, Obiekt i Przezroczyste.
-- Eksport PNG, JPG i WEBP.
-- Płótna: oryginał, 1:1, 4:5, 9:16, 16:9 i Produkt 2000×2000.
-- Własny dopisek do nazwy i folder zapisu.
-- Opcjonalne automatyczne otwieranie folderu po eksporcie.
-- Nadal dostępne przetwarzanie wielu zdjęć.
+### Okno diagnostyczne
+- Historia bieżącej sesji w osobnym ciemnym oknie PXR.
+- Jednym kliknięciem można skopiować cały raport do schowka.
+- Z programu można bezpośrednio otworzyć folder z logami.
+- Można wyczyścić bieżący dziennik.
+- Log jest przechowywany lokalnie w danych aplikacji BackgroundPXR.
+- Log automatycznie się rotuje, żeby plik nie rósł bez końca.
 
 ### Stabilność
-- Rozszerzone testy silnika i ręcznego edytora maski.
-- Przed każdym wydaniem Windows uruchamiany jest prawdziwy smoke test, który buduje cały interfejs GUI.
-- Test GUI korzysta z tej samej głównej wersji CustomTkinter co finalny build.
+- Dodane testy obliczania procentów, zapisywania logów i identyfikatorów błędów.
+- Smoke test Windows uruchamia teraz wersję z diagnostyką i sprawdza, czy procent oraz przycisk LOG naprawdę powstały w GUI.
+- Wszystkie funkcje Studio Editor 0.3.0 pozostają: High Quality v2, alpha matting, pędzle Przywróć/Usuń, zoom, przesuwanie, Cofnij/Ponów i ręczne poprawki maski.
 
-Przy pierwszym użyciu danego modelu AI jego plik może zostać pobrany. Późniejsze przetwarzanie obrazu odbywa się lokalnie na komputerze.
+Procent oznacza rzeczywiste, kontrolowane etapy przetwarzania oraz postęp kolejki. Samo liczenie sieci neuronowej nie udostępnia wiarygodnego procentu „w środku” operacji, dlatego podczas tego etapu BackgroundPXR pokazuje nazwę etapu i działający licznik sekund zamiast udawać fałszywy postęp.
