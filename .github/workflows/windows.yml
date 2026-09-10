@@ -17,11 +17,13 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
-          pip install Pillow pytest
+          pip install Pillow pytest customtkinter tkinterdnd2
       - name: Syntax check
         run: python -m compileall -q app.py backgroundpxr tests
       - name: Unit tests
         run: python -m pytest -q
+      - name: GUI startup smoke test
+        run: python tests/smoke_ui.py
 
   build-release:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:'))
@@ -50,6 +52,7 @@ jobs:
         run: |
           $version = (Select-String -Path backgroundpxr/__init__.py -Pattern '__version__ = "([^"]+)"').Matches.Groups[1].Value
           Copy-Item README.md dist/BackgroundPXR/
+          if (Test-Path RELEASE_NOTES.md) { Copy-Item RELEASE_NOTES.md dist/BackgroundPXR/ }
           Compress-Archive -Path dist/BackgroundPXR -DestinationPath "BackgroundPXR-$version-Windows.zip"
           $digest = (Get-FileHash "BackgroundPXR-$version-Windows.zip" -Algorithm SHA256).Hash.ToLower()
           "$digest  BackgroundPXR-$version-Windows.zip" | Set-Content "BackgroundPXR-$version-Windows.zip.sha256" -Encoding utf8
@@ -67,4 +70,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v$env:VERSION" "BackgroundPXR-$env:VERSION-Windows.zip" "BackgroundPXR-$env:VERSION-Windows.zip.sha256" --target $env:GITHUB_SHA --title "BackgroundPXR $env:VERSION" --notes "BackgroundPXR Power eXtreme Remover $env:VERSION`n`nPremium EN/PL interface, custom PXR icon, background replacement and blur, social/product canvas presets, batch export and persistent settings."
+          $notes = if (Test-Path RELEASE_NOTES.md) { 'RELEASE_NOTES.md' } else { $null }
+          if ($notes) {
+            gh release create "v$env:VERSION" "BackgroundPXR-$env:VERSION-Windows.zip" "BackgroundPXR-$env:VERSION-Windows.zip.sha256" --target $env:GITHUB_SHA --title "BackgroundPXR $env:VERSION" --notes-file RELEASE_NOTES.md
+          } else {
+            gh release create "v$env:VERSION" "BackgroundPXR-$env:VERSION-Windows.zip" "BackgroundPXR-$env:VERSION-Windows.zip.sha256" --target $env:GITHUB_SHA --title "BackgroundPXR $env:VERSION" --notes "BackgroundPXR $env:VERSION"
+          }
