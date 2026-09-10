@@ -1,8 +1,9 @@
-name: Windows checks
+name: Windows build & release
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -12,7 +13,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install lightweight test dependencies
+      - name: Install test dependencies
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
@@ -21,3 +22,49 @@ jobs:
         run: python -m compileall -q app.py backgroundpxr tests
       - name: Unit tests
         run: python -m pytest -q
+
+  build-release:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:'))
+    needs: test
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install application dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+      - name: Generate BackgroundPXR icon
+        run: python -m backgroundpxr.branding --output build_assets
+      - name: Build Windows portable app
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean --windowed --name BackgroundPXR --icon build_assets/BackgroundPXR.ico --collect-all customtkinter --collect-all tkinterdnd2 --collect-all rembg app.py
+      - name: Package release
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path backgroundpxr/__init__.py -Pattern '__version__ = "([^"]+)"').Matches.Groups[1].Value
+          Copy-Item README.md dist/BackgroundPXR/
+          Compress-Archive -Path dist/BackgroundPXR -DestinationPath "BackgroundPXR-$version-Windows.zip"
+          $digest = (Get-FileHash "BackgroundPXR-$version-Windows.zip" -Algorithm SHA256).Hash.ToLower()
+          "$digest  BackgroundPXR-$version-Windows.zip" | Set-Content "BackgroundPXR-$version-Windows.zip.sha256" -Encoding utf8
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BackgroundPXR-Windows
+          path: |
+            BackgroundPXR-${{ env.VERSION }}-Windows.zip
+            BackgroundPXR-${{ env.VERSION }}-Windows.zip.sha256
+      - name: Publish GitHub Release
+        if: github.event_name == 'push'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v$env:VERSION" "BackgroundPXR-$env:VERSION-Windows.zip" "BackgroundPXR-$env:VERSION-Windows.zip.sha256" --target $env:GITHUB_SHA --title "BackgroundPXR $env:VERSION" --notes "BackgroundPXR Power eXtreme Remover $env:VERSION`n`nPremium EN/PL interface, custom PXR icon, background replacement and blur, social/product canvas presets, batch export and persistent settings."
