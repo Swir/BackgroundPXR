@@ -6,11 +6,6 @@ import traceback
 from importlib.metadata import version
 from pathlib import Path
 
-# PyInstaller --windowed applications on Windows normally start with
-# sys.stdout/sys.stderr set to None. rembg -> pooch -> tqdm expects stderr to
-# be a writable stream while downloading a model for the first time. Keep the
-# replacement streams alive for the whole process so model downloads never
-# crash with: AttributeError: 'NoneType' object has no attribute 'write'.
 _FALLBACK_STREAMS = []
 
 
@@ -25,7 +20,6 @@ def ensure_writable_stdio() -> None:
 
 
 def runtime_self_test() -> None:
-    """Fail fast if a frozen Windows build is missing the real AI runtime."""
     ensure_writable_stdio()
     assert sys.stdout is not None and callable(getattr(sys.stdout, "write", None))
     assert sys.stderr is not None and callable(getattr(sys.stderr, "write", None))
@@ -39,7 +33,6 @@ def runtime_self_test() -> None:
     version("rembg")
     version("onnxruntime")
 
-    # Reproduce the exact writer used by pooch while rembg downloads a model.
     probe = tqdm(total=1, file=sys.stderr, leave=False, desc="PXR runtime")
     probe.update(1)
     probe.close()
@@ -58,11 +51,11 @@ def main() -> None:
             report.write_text(traceback.format_exc(), encoding="utf-8")
             raise SystemExit(23)
 
-    from backgroundpxr.studio_v034 import BackgroundPXRStudio034App
+    from backgroundpxr.studio_v034_fix import BackgroundPXRStudio034FixedApp
     from backgroundpxr.ui import create_root
 
     root = create_root()
-    BackgroundPXRStudio034App(root)
+    BackgroundPXRStudio034FixedApp(root)
     root.mainloop()
 
 
