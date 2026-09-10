@@ -26,8 +26,6 @@ def ensure_writable_stdio() -> None:
 
 def runtime_self_test() -> None:
     """Fail fast if a frozen Windows build is missing AI runtime metadata."""
-    # Also validate the exact condition required by tqdm/pooch in a windowed
-    # executable before touching the AI stack.
     ensure_writable_stdio()
     assert sys.stdout is not None and callable(getattr(sys.stdout, "write", None))
     assert sys.stderr is not None and callable(getattr(sys.stderr, "write", None))
@@ -36,8 +34,6 @@ def runtime_self_test() -> None:
     import pymatting  # noqa: F401
     import rembg  # noqa: F401
 
-    # pymatting imports its own version through importlib.metadata, which is
-    # exactly what failed in the 0.3.1 portable release.
     version("pymatting")
     version("rembg")
     version("onnxruntime")
@@ -58,11 +54,11 @@ def main() -> None:
             report.write_text(traceback.format_exc(), encoding="utf-8")
             raise SystemExit(23)
 
-    from backgroundpxr.pro_ui import BackgroundPXRProApp
+    from backgroundpxr.studio_ui import BackgroundPXRStudioApp
     from backgroundpxr.ui import create_root
 
     root = create_root()
-    BackgroundPXRProApp(root)
+    BackgroundPXRStudioApp(root)
     root.mainloop()
 
 
