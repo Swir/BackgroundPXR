@@ -19,6 +19,7 @@ DEFAULTS = {
     "canvas_preset": "Original",
     "output_suffix": "_pxr",
     "auto_open_output": False,
+    "output_dir": "",
 }
 
 
