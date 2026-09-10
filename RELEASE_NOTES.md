@@ -1,67 +1,63 @@
-# BackgroundPXR 0.3.2 — Runtime & Professional UI Hotfix
+# BackgroundPXR 0.3.3 — Model Download & Readable UI Fix
 
 ## English
 
-BackgroundPXR 0.3.2 fixes the frozen Windows AI runtime and rebuilds the studio controls for 1600×900 / high-DPI displays.
+BackgroundPXR 0.3.3 fixes the first-run AI model download crash in the Windows portable build and improves readability on 1600×900 / high-DPI displays.
 
-### Critical AI runtime fix
-- Fixed `importlib.metadata.PackageNotFoundError: No package metadata was found for pymatting` in the Windows portable release.
-- `pymatting` is now an explicit application dependency.
-- The PyInstaller build uses a dedicated spec file and explicitly bundles distribution metadata required by `pymatting`, `rembg` and `onnxruntime`.
-- The complete `onnxruntime` payload is explicitly collected for the portable build.
-- Every future Windows build now launches the finished `BackgroundPXR.exe --self-test-runtime` before packaging or publishing.
-- The frozen self-test is started as a real Windows process and CI waits for its exit code before continuing.
-- The frozen self-test imports the real AI stack and verifies package metadata from inside the EXE bundle.
-- If the runtime self-test fails, GitHub Actions prints its traceback and blocks the release.
-- AI import errors now describe the actual runtime dependency failure instead of incorrectly saying only that `requirements.txt` is missing.
+### First-run AI model download fix
+- Fixed `AttributeError: 'NoneType' object has no attribute 'write'` raised by `tqdm` while `rembg`/`pooch` downloads an AI model.
+- The cause was PyInstaller `--windowed`: Windows GUI executables can start with `sys.stdout` and `sys.stderr` set to `None`.
+- BackgroundPXR now creates safe writable fallback streams before `rembg`, `pooch` or `tqdm` can be reached.
+- Running from source is unchanged: normal console streams remain untouched.
+- The frozen EXE self-test now creates a real `tqdm` progress probe on `stderr`, reproducing the writer path used during model downloads.
+- The existing frozen runtime checks for `pymatting`, `rembg`, `onnxruntime` and package metadata remain enabled.
+- A release is blocked automatically if the final EXE fails any runtime check.
 
-### Professional 1600×900 layout fix
-- New `Professional UI` shell keeps the existing AI engine, manual mask editor and diagnostics while rebuilding the right-side studio controls.
-- Right panel is wider and uses compact professional spacing rather than vertically oversized cards.
-- AI Removal, Refine Edges, Manual Cleanup and Export are all visible together without overlapping.
-- Primary buttons retain minimum usable dimensions and no longer collapse into each other.
-- Brush Size and Brush Hardness are arranged side-by-side to save vertical space.
-- Export controls, progress percentage, LOG button and action buttons remain visible at the bottom.
-- Windows launches maximized by default.
-- Widget scaling is normalized on 900p/1080p high-DPI displays to prevent CustomTkinter from making the control stack taller than the available workspace.
+### Readable 1600×900 Studio UI
+- Removed the 0.88 global widget scaling that made the 0.3.2 interface too small.
+- Important UI text is now 9 pt or larger, with larger project/sidebar controls and clearer status text.
+- The left project panel is wider and the Clear button has reserved width so Polish labels are not clipped.
+- The right studio panel is also wider for Polish text and longer model/background names.
+- The four studio cards use explicit compact label heights rather than shrinking the fonts.
+- AI Removal, Refine Edges, Manual Cleanup and Export remain visible together without a whole-panel scrollbar.
+- Footer text and the GitHub/by Swir area are more readable.
 
-### New release gate
-- The Windows GUI smoke test forces a 1600×900 window and verifies that all four right-side cards fit inside the panel without overlap.
-- The smoke test also verifies minimum sizes for Remove, Restore, Erase, Export and Process All buttons.
-- The finished frozen EXE must return an `OK` runtime self-test report before ZIP packaging and GitHub Release publication can begin.
+### Verified layout
+- Automated GUI testing verifies the final Studio shell rather than the older intermediate UI class.
+- At the Windows CI test workspace the right panel measured 682 px high; the complete card stack ended at 609 px, leaving roughly 73 px of safety margin.
+- The test verifies the left sidebar width, Clear button bounds, card overlap, Export visibility, minimum button sizes and minimum readable font sizes.
+- Unit tests also reproduce the no-console `stdout/stderr` condition used by a PyInstaller windowed executable.
 
-All Studio Editor features remain available: High Quality v2, Fast/Quality/Portrait models, alpha matting, Restore/Erase brushes, Smart Cleanup, Remove Leftovers, zoom, pan, Undo/Redo, live percentage and diagnostics LOG.
+All existing functions remain available: local AI background removal, High Quality v2 / Quality / Fast / Portrait modes, alpha matting, manual Restore/Erase editing, Smart Cleanup, Remove Leftovers, replacement backgrounds, zoom/pan, Undo/Redo, batch processing, PNG/JPG/WebP export, live percentage and diagnostics LOG.
 
 ---
 
 ## Polski
 
-BackgroundPXR 0.3.2 naprawia silnik AI w gotowej paczce Windows oraz przebudowuje panel programu pod 1600×900 i skalowanie DPI Windows.
+BackgroundPXR 0.3.3 naprawia błąd pobierania modelu AI przy pierwszym uruchomieniu wersji portable Windows oraz poprawia czytelność interfejsu na 1600×900 i ekranach z wyższym DPI.
 
-### Krytyczna naprawa silnika AI
-- Naprawiono błąd `importlib.metadata.PackageNotFoundError: No package metadata was found for pymatting` z wersji portable Windows.
-- `pymatting` jest teraz jawną zależnością programu.
-- PyInstaller korzysta z osobnego pliku spec i pakuje metadane wymagane przez `pymatting`, `rembg` oraz `onnxruntime`.
-- Pełny pakiet `onnxruntime` jest jawnie zbierany do wersji portable.
-- Każdy kolejny build Windows przed utworzeniem ZIP-a uruchamia gotowy `BackgroundPXR.exe --self-test-runtime`.
-- Self-test jest uruchamiany jako prawdziwy proces Windows, a CI czeka na jego zakończenie i kod wyjścia.
-- Self-test sprawdza prawdziwy stos AI i metadane pakietów już wewnątrz gotowego EXE.
-- Jeśli test runtime nie przejdzie, GitHub Actions pokazuje traceback i blokuje publikację release.
-- Błędy importu AI pokazują teraz rzeczywistą przyczynę problemu zamiast mylącego komunikatu o `requirements.txt`.
+### Naprawa pobierania modelu AI
+- Naprawiono błąd `AttributeError: 'NoneType' object has no attribute 'write'`, który pojawiał się w `tqdm` podczas pobierania modelu przez `rembg`/`pooch`.
+- Przyczyną był tryb PyInstaller `--windowed`: aplikacja GUI Windows może uruchomić się z `sys.stdout` i `sys.stderr` ustawionymi na `None`.
+- BackgroundPXR tworzy teraz bezpieczne zapisywalne strumienie zanim kod dotrze do `rembg`, `pooch` albo `tqdm`.
+- Uruchamianie programu ze źródeł pozostaje bez zmian — normalna konsola nie jest podmieniana.
+- Self-test gotowego EXE uruchamia teraz prawdziwy testowy pasek `tqdm` zapisujący do `stderr`, czyli dokładnie ścieżkę używaną przy pobieraniu modelu.
+- Nadal sprawdzane są `pymatting`, `rembg`, `onnxruntime` i ich metadane wewnątrz gotowego EXE.
+- Jeżeli finalny EXE nie przejdzie testów runtime, release zostaje automatycznie zablokowany.
 
-### Naprawa Professional UI 1600×900
-- Nowa warstwa `Professional UI` zachowuje działający silnik, edytor maski i diagnostykę, ale przebudowuje prawy panel programu.
-- Panel po prawej jest szerszy i ma zwarte, profesjonalne odstępy zamiast zbyt wysokich kart.
-- Usuwanie AI, Dopracuj krawędzie, Ręczne poprawki i Eksport są widoczne jednocześnie i nie nachodzą na siebie.
-- Najważniejsze przyciski zachowują minimalny użyteczny rozmiar i nie są zgniatane.
-- Rozmiar i twardość pędzla są ustawione obok siebie, dzięki czemu odzyskaliśmy miejsce w pionie.
-- Eksport, procent postępu, LOG i przyciski akcji pozostają widoczne na dole.
-- Na Windows program uruchamia się domyślnie zmaksymalizowany.
-- Na ekranach 900p/1080p normalizujemy skalowanie widgetów, żeby DPI Windows nie rozciągało panelu poza obszar programu.
+### Czytelny Studio UI 1600×900
+- Usunięto globalne skalowanie 0.88 z wersji 0.3.2, które zbyt mocno pomniejszało cały interfejs.
+- Ważne teksty interfejsu mają teraz co najmniej 9 pt, powiększone są również główne kontrolki projektu i status.
+- Lewy panel projektu jest szerszy, a przycisk Wyczyść ma zarezerwowaną szerokość, więc polskie napisy nie powinny być ucinane.
+- Prawy panel Studio jest również szerszy, żeby pomieścić dłuższe polskie nazwy.
+- Cztery karty po prawej oszczędzają miejsce przez mniejsze wysokości pustych wierszy etykiet, a nie przez zmniejszanie czcionek.
+- Usuwanie AI, Dopracuj krawędzie, Ręczne poprawki i Eksport pozostają widoczne jednocześnie bez przewijania całego panelu.
+- Stopka `by Swir` i link GitHub są bardziej czytelne.
 
-### Nowa blokada wadliwych wydań
-- Smoke test Windows wymusza rozdzielczość 1600×900 i sprawdza, czy wszystkie cztery prawe karty mieszczą się bez nakładania.
-- Sprawdzana jest również minimalna wielkość przycisków Usuń tło, Przywróć, Usuń, Eksportuj i Przetwórz wszystkie.
-- Gotowy zamrożony EXE musi zwrócić raport `OK` z testu runtime, zanim rozpocznie się pakowanie ZIP-a i publikacja GitHub Release.
+### Zweryfikowany układ
+- Test GUI sprawdza teraz finalną klasę Studio, a nie wcześniejszą pośrednią wersję interfejsu.
+- W środowisku testowym Windows prawy panel miał 682 px wysokości, a komplet kart kończył się na 609 px — około 73 px zapasu.
+- Test sprawdza szerokość lewego panelu, granice przycisku Wyczyść, brak nakładania kart, widoczność Eksportu, minimalne rozmiary przycisków i minimalny rozmiar ważnych czcionek.
+- Test jednostkowy odtwarza również sytuację bez konsoli, czyli `stdout/stderr=None`, występującą w aplikacji PyInstaller `--windowed`.
 
-Pozostają wszystkie funkcje Studio Editor: High Quality v2, tryby Szybki/Jakość/Portret, alpha matting, pędzle Przywróć/Usuń, Smart Cleanup, Usuń resztki, zoom, przesuwanie, Cofnij/Ponów, procent postępu i pełny LOG diagnostyczny.
+Pozostają wszystkie dotychczasowe funkcje: lokalne usuwanie tła AI, tryby Najwyższa jakość v2 / Jakość / Szybki / Portret, alpha matting, ręczne Przywróć/Usuń, Smart Cleanup, Usuń resztki, podmiana tła, zoom/przesuwanie, Cofnij/Ponów, batch, eksport PNG/JPG/WebP, procent postępu oraz LOG diagnostyczny.
