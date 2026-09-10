@@ -8,7 +8,9 @@ BackgroundPXR 0.3.2 fixes the frozen Windows AI runtime and rebuilds the studio 
 - Fixed `importlib.metadata.PackageNotFoundError: No package metadata was found for pymatting` in the Windows portable release.
 - `pymatting` is now an explicit application dependency.
 - The PyInstaller build uses a dedicated spec file and explicitly bundles distribution metadata required by `pymatting`, `rembg` and `onnxruntime`.
+- The complete `onnxruntime` payload is explicitly collected for the portable build.
 - Every future Windows build now launches the finished `BackgroundPXR.exe --self-test-runtime` before packaging or publishing.
+- The frozen self-test is started as a real Windows process and CI waits for its exit code before continuing.
 - The frozen self-test imports the real AI stack and verifies package metadata from inside the EXE bundle.
 - If the runtime self-test fails, GitHub Actions prints its traceback and blocks the release.
 - AI import errors now describe the actual runtime dependency failure instead of incorrectly saying only that `requirements.txt` is missing.
@@ -24,8 +26,9 @@ BackgroundPXR 0.3.2 fixes the frozen Windows AI runtime and rebuilds the studio 
 - Widget scaling is normalized on 900p/1080p high-DPI displays to prevent CustomTkinter from making the control stack taller than the available workspace.
 
 ### New release gate
-- The Windows GUI smoke test now forces a 1600×900 window and verifies that all four right-side cards fit inside the panel without overlap.
+- The Windows GUI smoke test forces a 1600×900 window and verifies that all four right-side cards fit inside the panel without overlap.
 - The smoke test also verifies minimum sizes for Remove, Restore, Erase, Export and Process All buttons.
+- The finished frozen EXE must return an `OK` runtime self-test report before ZIP packaging and GitHub Release publication can begin.
 
 All Studio Editor features remain available: High Quality v2, Fast/Quality/Portrait models, alpha matting, Restore/Erase brushes, Smart Cleanup, Remove Leftovers, zoom, pan, Undo/Redo, live percentage and diagnostics LOG.
 
@@ -39,7 +42,9 @@ BackgroundPXR 0.3.2 naprawia silnik AI w gotowej paczce Windows oraz przebudowuj
 - Naprawiono błąd `importlib.metadata.PackageNotFoundError: No package metadata was found for pymatting` z wersji portable Windows.
 - `pymatting` jest teraz jawną zależnością programu.
 - PyInstaller korzysta z osobnego pliku spec i pakuje metadane wymagane przez `pymatting`, `rembg` oraz `onnxruntime`.
+- Pełny pakiet `onnxruntime` jest jawnie zbierany do wersji portable.
 - Każdy kolejny build Windows przed utworzeniem ZIP-a uruchamia gotowy `BackgroundPXR.exe --self-test-runtime`.
+- Self-test jest uruchamiany jako prawdziwy proces Windows, a CI czeka na jego zakończenie i kod wyjścia.
 - Self-test sprawdza prawdziwy stos AI i metadane pakietów już wewnątrz gotowego EXE.
 - Jeśli test runtime nie przejdzie, GitHub Actions pokazuje traceback i blokuje publikację release.
 - Błędy importu AI pokazują teraz rzeczywistą przyczynę problemu zamiast mylącego komunikatu o `requirements.txt`.
@@ -55,7 +60,8 @@ BackgroundPXR 0.3.2 naprawia silnik AI w gotowej paczce Windows oraz przebudowuj
 - Na ekranach 900p/1080p normalizujemy skalowanie widgetów, żeby DPI Windows nie rozciągało panelu poza obszar programu.
 
 ### Nowa blokada wadliwych wydań
-- Smoke test Windows wymusza teraz rozdzielczość 1600×900 i sprawdza, czy wszystkie cztery prawe karty mieszczą się bez nakładania.
+- Smoke test Windows wymusza rozdzielczość 1600×900 i sprawdza, czy wszystkie cztery prawe karty mieszczą się bez nakładania.
 - Sprawdzana jest również minimalna wielkość przycisków Usuń tło, Przywróć, Usuń, Eksportuj i Przetwórz wszystkie.
+- Gotowy zamrożony EXE musi zwrócić raport `OK` z testu runtime, zanim rozpocznie się pakowanie ZIP-a i publikacja GitHub Release.
 
 Pozostają wszystkie funkcje Studio Editor: High Quality v2, tryby Szybki/Jakość/Portret, alpha matting, pędzle Przywróć/Usuń, Smart Cleanup, Usuń resztki, zoom, przesuwanie, Cofnij/Ponów, procent postępu i pełny LOG diagnostyczny.
