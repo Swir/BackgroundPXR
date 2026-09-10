@@ -1,0 +1,4 @@
+customtkinter>=5.2.2,<6
+Pillow>=10.4,<13
+rembg[cpu]>=2.0.67,<3
+tkinterdnd2>=0.4.3,<1
