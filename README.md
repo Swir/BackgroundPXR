@@ -1,49 +1,44 @@
 # BackgroundPXR — Power eXtreme Remover
 
-**BackgroundPXR** is a local Windows desktop app for AI background removal and background replacement. English is the default interface; Polish is available from the header.
+**by Swir** · https://github.com/Swir
 
-## 0.1.0 preview
+BackgroundPXR is a Windows desktop background-removal and creative cutout tool designed for fast local work with product photos, portraits and social media images.
 
-- Batch import from files, folders, and drag & drop.
-- Side-by-side Before / After preview.
-- Three local AI modes: **Quality** (`isnet-general-use`), **Fast** (`u2netp`), and **Portrait** (`birefnet-portrait`).
-- Output backgrounds: transparent, white, custom color, or another image.
-- Edge softness control.
-- Optional soft product-style shadow.
-- Auto-crop subject with configurable padding.
-- PNG, JPG, and WEBP export.
-- English / Polish UI.
-- No account and no cloud upload. Models download automatically on first use and are then reused locally.
+## 0.2.0 — Premium redesign
 
-> BackgroundPXR does not use the `bria-rmbg` model by default. AI model weights can have licenses independent of rembg, so model licensing should be reviewed before commercial redistribution.
+- Premium compact dark interface with cyan/violet PXR branding.
+- English first, full Polish interface second.
+- Custom **BackgroundPXR / PXR icon** generated locally and used by the Windows build.
+- AI modes: Quality, Fast and Portrait.
+- Backgrounds: Transparent, White, Custom Color, Custom Image and **Blur Original**.
+- Edge refinement, adjustable blur, soft shadow, auto-crop and padding.
+- Canvas presets: Original, 1:1, 4:5, 9:16, 16:9 and Product 2000×2000.
+- One-click presets for Product, Portrait and Social.
+- Batch processing, custom filename suffix, PNG/JPG/WebP export.
+- Persistent local settings and optional output-folder opening after export.
+- Large Before / After workspace with checkerboard transparency preview.
+- Clickable **github.com/Swir** link and **by Swir** branding in the application footer.
+- Right-side controls use a fixed compact layout instead of a scrolling settings panel.
 
-## Windows quick start
+The selected rembg model downloads automatically on first use. Later processing is local.
 
-Recommended: **Python 3.11 or 3.12 (64-bit)**.
+## Run from source
 
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
 pip install -r requirements.txt
 python app.py
 ```
 
-The first removal can take longer because the selected local model is downloaded. Later runs reuse the model from the local rembg model cache.
+## Windows releases
 
-## Build a Windows executable
+The GitHub workflow tests every update. A commit whose message starts with `release:` additionally installs the full application dependencies, generates the PXR Windows icon, builds a portable application with PyInstaller, creates a ZIP and SHA-256 checksum, uploads the build artifact and publishes a GitHub Release.
 
-```powershell
-pip install -r requirements-dev.txt
-pyinstaller --noconfirm --windowed --name BackgroundPXR --collect-all customtkinter --collect-all tkinterdnd2 app.py
-```
+## Project identity
 
-For release builds, test the generated folder on a clean Windows machine before publishing. Rembg/ONNX model files are intentionally not bundled in 0.1.0; the selected model downloads on first use.
+**BackgroundPXR — Power eXtreme Remover**  
+Created **by Swir**  
+GitHub: https://github.com/Swir
 
-## Privacy
-
-Images are processed on the user's computer by the local `rembg`/ONNX pipeline. BackgroundPXR itself does not upload images or require an account.
-
-## Project direction
-
-Planned next steps include a brush for mask correction, object-centered canvas presets for marketplaces, background blur, batch naming templates, model manager, and signed portable Windows builds.
+> Background segmentation is probabilistic. Always review difficult hair, fur, transparent objects and fine edges before publishing.
