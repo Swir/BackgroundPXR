@@ -7,7 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.studio_v034 import BackgroundPXRStudio034App
+from backgroundpxr.studio_v034_fix import BackgroundPXRStudio034FixedApp
 from backgroundpxr.ui import create_root
 
 
@@ -22,7 +22,7 @@ def _font_size(widget) -> int:
 def main() -> None:
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRStudio034App(root)
+    app = BackgroundPXRStudio034FixedApp(root)
 
     try:
         root.state("normal")
@@ -42,18 +42,14 @@ def main() -> None:
     assert app._diag_percent_var.get() == "0%"
     assert app.diagnostics.path.name == "backgroundpxr.log"
 
-    # Left project area must remain readable and wide enough for Polish labels.
-    assert app.left_panel.winfo_width() >= 326, "Left sidebar is too narrow at 1600x900"
+    assert app.left_panel.winfo_width() >= 326, f"Left sidebar is too narrow: {app.left_panel.winfo_width()}"
     assert app.clear_btn.winfo_width() >= 80, "Clear button is being clipped"
     clear_parent = app.clear_btn.master
     assert app.clear_btn.winfo_x() + app.clear_btn.winfo_width() <= clear_parent.winfo_width() + 2, "Clear button extends beyond its header"
 
-    # The new Studio mode control must be present and default to Cutout.
     assert app.studio_mode.get() == "cutout"
     assert len(app.studio_mode_bar.cget("values")) == 4
 
-    # Filmstrip is collapsed by default to recover vertical room. Expanding it
-    # must remain possible without destroying the preview canvas.
     assert not app._filmstrip_expanded
     assert app.filmstrip_strip.cget("height") <= 40
     app._toggle_filmstrip()
@@ -64,10 +60,9 @@ def main() -> None:
     root.update_idletasks()
     assert not app._filmstrip_expanded
 
-    # The whole right-side Studio stack must fit with additional bottom safety.
     cards = [app.ai_card, app.refine_card, app.manual_card, app.export_card]
     geometry = [(card.winfo_y(), card.winfo_height()) for card in cards]
-    print(f"right_panel height={app.right_panel.winfo_height()} card_geometry={geometry}")
+    print(f"left={app.left_panel.winfo_width()} right_panel={app.right_panel.winfo_height()} cards={geometry}")
     for upper, lower in zip(cards, cards[1:]):
         assert upper.winfo_y() + upper.winfo_height() <= lower.winfo_y(), f"Studio cards overlap: {upper} -> {lower}; {geometry}"
     export_bottom = app.export_card.winfo_y() + app.export_card.winfo_height()
