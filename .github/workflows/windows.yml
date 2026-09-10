@@ -17,7 +17,7 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
-          pip install Pillow pytest customtkinter tkinterdnd2
+          pip install "Pillow>=10.4,<13" pytest "customtkinter>=5.2.2,<6" "tkinterdnd2>=0.4.3,<1"
       - name: Syntax check
         run: python -m compileall -q app.py backgroundpxr tests
       - name: Unit tests
