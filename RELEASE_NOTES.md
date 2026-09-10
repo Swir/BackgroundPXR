@@ -38,9 +38,9 @@ BackgroundPXR 0.3.4 starts the transition from a simple background remover into 
 - Footer branding: **by Swir • github.com/Swir**.
 
 ### Release gate
-- Windows smoke test now launches the actual 0.3.4 Studio class.
+- Windows smoke test launches the actual 0.3.4 Studio class.
 - It verifies the real sidebar, Studio mode selector, collapsed/expanded thumbnail strip, readable fonts, button sizes, right-panel overlap and bottom safety at 1600×900.
-- The existing frozen EXE runtime self-test for rembg/pymatting/onnxruntime/tqdm remains enabled.
+- The frozen EXE runtime self-test for rembg/pymatting/onnxruntime/tqdm remains enabled.
 
 ---
 
@@ -82,6 +82,8 @@ BackgroundPXR 0.3.4 rozpoczyna zmianę programu z prostego removera w pełne **A
 - Stopka: **by Swir • github.com/Swir**.
 
 ### Kontrola release
-- Smoke test Windows uruchamia teraz prawdziwą klasę Studio 0.3.4.
+- Smoke test Windows uruchamia prawdziwą klasę Studio 0.3.4.
 - Sprawdza rzeczywisty sidebar, przełącznik Studio, zwinięty/rozwinięty pasek miniaturek, czcionki, rozmiary przycisków, nakładanie paneli i zapas na dole przy 1600×900.
 - Nadal działa self-test finalnego EXE sprawdzający rembg/pymatting/onnxruntime/tqdm.
+
+**0.3.4 is the first release in the AI Background Studio line.**
