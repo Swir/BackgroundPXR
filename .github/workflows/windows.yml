@@ -44,9 +44,14 @@ jobs:
       - name: Generate BackgroundPXR icon
         run: python -m backgroundpxr.branding --output build_assets
       - name: Build Windows portable app
+        run: pyinstaller --noconfirm --clean BackgroundPXR.spec
+      - name: Verify frozen AI runtime metadata
         shell: pwsh
         run: |
-          pyinstaller --noconfirm --clean --windowed --name BackgroundPXR --icon build_assets/BackgroundPXR.ico --collect-all customtkinter --collect-all tkinterdnd2 --collect-all rembg app.py
+          $pymattingMeta = Get-ChildItem dist/BackgroundPXR -Recurse -Directory | Where-Object { $_.Name -match '^pymatting-.*\.dist-info$' }
+          if (-not $pymattingMeta) { throw 'pymatting dist-info metadata is missing from the frozen build.' }
+          & .\dist\BackgroundPXR\BackgroundPXR.exe --self-test-runtime
+          if ($LASTEXITCODE -ne 0) { throw "BackgroundPXR bundled runtime self-test failed with exit code $LASTEXITCODE" }
       - name: Package release
         shell: pwsh
         run: |
