@@ -25,7 +25,7 @@ def ensure_writable_stdio() -> None:
 
 
 def runtime_self_test() -> None:
-    """Fail fast if a frozen Windows build is missing AI runtime metadata."""
+    """Fail fast if a frozen Windows build is missing the real AI runtime."""
     ensure_writable_stdio()
     assert sys.stdout is not None and callable(getattr(sys.stdout, "write", None))
     assert sys.stderr is not None and callable(getattr(sys.stderr, "write", None))
@@ -33,10 +33,17 @@ def runtime_self_test() -> None:
     import onnxruntime  # noqa: F401
     import pymatting  # noqa: F401
     import rembg  # noqa: F401
+    from tqdm import tqdm
 
     version("pymatting")
     version("rembg")
     version("onnxruntime")
+
+    # Reproduce the exact writer used by pooch while rembg downloads a model.
+    # In a PyInstaller --windowed EXE this used to crash because stderr=None.
+    probe = tqdm(total=1, file=sys.stderr, leave=False, desc="PXR runtime")
+    probe.update(1)
+    probe.close()
 
 
 def main() -> None:
