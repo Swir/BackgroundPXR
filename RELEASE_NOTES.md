@@ -1,63 +1,87 @@
-# BackgroundPXR 0.3.3 — Model Download & Readable UI Fix
+# BackgroundPXR 0.3.4 — AI Background Studio Foundation
 
 ## English
 
-BackgroundPXR 0.3.3 fixes the first-run AI model download crash in the Windows portable build and improves readability on 1600×900 / high-DPI displays.
+BackgroundPXR 0.3.4 starts the transition from a simple background remover into **AI Background Studio** while keeping the proven 0.3.3 AI runtime and diagnostics.
 
-### First-run AI model download fix
-- Fixed `AttributeError: 'NoneType' object has no attribute 'write'` raised by `tqdm` while `rembg`/`pooch` downloads an AI model.
-- The cause was PyInstaller `--windowed`: Windows GUI executables can start with `sys.stdout` and `sys.stderr` set to `None`.
-- BackgroundPXR now creates safe writable fallback streams before `rembg`, `pooch` or `tqdm` can be reached.
-- Running from source is unchanged: normal console streams remain untouched.
-- The frozen EXE self-test now creates a real `tqdm` progress probe on `stderr`, reproducing the writer path used during model downloads.
-- The existing frozen runtime checks for `pymatting`, `rembg`, `onnxruntime` and package metadata remain enabled.
-- A release is blocked automatically if the final EXE fails any runtime check.
+### AI Background Studio modes
+- New first-class Studio selector in the left project panel.
+- Four workflow modes: **Cutout / Replace / Blur / Studio**.
+- Cutout switches to transparent output.
+- Replace reuses the existing custom color or replacement-image workflow.
+- Blur reuses the original-image background blur workflow.
+- Studio switches to a clean white studio base with soft shadow enabled.
+- Alt+1 / Alt+2 / Alt+3 / Alt+4 switch Studio modes quickly.
 
-### Readable 1600×900 Studio UI
-- Removed the 0.88 global widget scaling that made the 0.3.2 interface too small.
-- Important UI text is now 9 pt or larger, with larger project/sidebar controls and clearer status text.
-- The left project panel is wider and the Clear button has reserved width so Polish labels are not clipped.
-- The right studio panel is also wider for Polish text and longer model/background names.
-- The four studio cards use explicit compact label heights rather than shrinking the fonts.
-- AI Removal, Refine Edges, Manual Cleanup and Export remain visible together without a whole-panel scrollbar.
-- Footer text and the GitHub/by Swir area are more readable.
+### Bottom clipping fix
+- The always-visible 82px thumbnail strip is now collapsed by default.
+- A dedicated **Show thumbnails / Hide thumbnails** control expands it only when needed.
+- F6 toggles the thumbnail strip.
+- The top tool strip, footer and action-button chrome were compacted without reducing readable text sizes.
+- Extra safety margin is reserved at the bottom for Windows taskbars and unusual DPI work areas.
 
-### Verified layout
-- Automated GUI testing verifies the final Studio shell rather than the older intermediate UI class.
-- At the Windows CI test workspace the right panel measured 682 px high; the complete card stack ended at 609 px, leaving roughly 73 px of safety margin.
-- The test verifies the left sidebar width, Clear button bounds, card overlap, Export visibility, minimum button sizes and minimum readable font sizes.
-- Unit tests also reproduce the no-console `stdout/stderr` condition used by a PyInstaller windowed executable.
+### Readability improvements
+- Left project panel widened to approximately 336px.
+- Project file rows use readable 10pt text and longer visible file names.
+- Studio mode controls use 9–10pt text.
+- Important editing and export controls retain readable fonts and minimum button sizes.
 
-All existing functions remain available: local AI background removal, High Quality v2 / Quality / Fast / Portrait modes, alpha matting, manual Restore/Erase editing, Smart Cleanup, Remove Leftovers, replacement backgrounds, zoom/pan, Undo/Redo, batch processing, PNG/JPG/WebP export, live percentage and diagnostics LOG.
+### Existing professional tools retained
+- High Quality v2 / Quality / Fast / Portrait AI modes.
+- Alpha matting and edge refinement.
+- Restore / Erase manual mask editor.
+- Smart Cleanup, Remove Leftovers, Reset Mask.
+- Zoom, pan, Undo / Redo.
+- Replace background, custom color, Blur Original and white/transparent output.
+- Batch processing and PNG/JPG/WEBP export.
+- Live percentage, processing stages and full diagnostics LOG.
+- Footer branding: **by Swir • github.com/Swir**.
+
+### Release gate
+- Windows smoke test now launches the actual 0.3.4 Studio class.
+- It verifies the real sidebar, Studio mode selector, collapsed/expanded thumbnail strip, readable fonts, button sizes, right-panel overlap and bottom safety at 1600×900.
+- The existing frozen EXE runtime self-test for rembg/pymatting/onnxruntime/tqdm remains enabled.
 
 ---
 
 ## Polski
 
-BackgroundPXR 0.3.3 naprawia błąd pobierania modelu AI przy pierwszym uruchomieniu wersji portable Windows oraz poprawia czytelność interfejsu na 1600×900 i ekranach z wyższym DPI.
+BackgroundPXR 0.3.4 rozpoczyna zmianę programu z prostego removera w pełne **AI Background Studio**, zachowując sprawdzony silnik AI i diagnostykę z wersji 0.3.3.
 
-### Naprawa pobierania modelu AI
-- Naprawiono błąd `AttributeError: 'NoneType' object has no attribute 'write'`, który pojawiał się w `tqdm` podczas pobierania modelu przez `rembg`/`pooch`.
-- Przyczyną był tryb PyInstaller `--windowed`: aplikacja GUI Windows może uruchomić się z `sys.stdout` i `sys.stderr` ustawionymi na `None`.
-- BackgroundPXR tworzy teraz bezpieczne zapisywalne strumienie zanim kod dotrze do `rembg`, `pooch` albo `tqdm`.
-- Uruchamianie programu ze źródeł pozostaje bez zmian — normalna konsola nie jest podmieniana.
-- Self-test gotowego EXE uruchamia teraz prawdziwy testowy pasek `tqdm` zapisujący do `stderr`, czyli dokładnie ścieżkę używaną przy pobieraniu modelu.
-- Nadal sprawdzane są `pymatting`, `rembg`, `onnxruntime` i ich metadane wewnątrz gotowego EXE.
-- Jeżeli finalny EXE nie przejdzie testów runtime, release zostaje automatycznie zablokowany.
+### Tryby AI Background Studio
+- Nowy główny przełącznik Studio w lewym panelu projektu.
+- Cztery tryby pracy: **Wytnij / Podmień / Rozmyj / Studio**.
+- Wytnij ustawia przezroczyste tło.
+- Podmień korzysta z istniejącej podmiany tła obrazem lub własnym kolorem.
+- Rozmyj wykorzystuje rozmycie oryginalnego tła.
+- Studio ustawia czyste białe tło i automatycznie włącza miękki cień.
+- Alt+1 / Alt+2 / Alt+3 / Alt+4 szybko zmieniają tryb Studio.
 
-### Czytelny Studio UI 1600×900
-- Usunięto globalne skalowanie 0.88 z wersji 0.3.2, które zbyt mocno pomniejszało cały interfejs.
-- Ważne teksty interfejsu mają teraz co najmniej 9 pt, powiększone są również główne kontrolki projektu i status.
-- Lewy panel projektu jest szerszy, a przycisk Wyczyść ma zarezerwowaną szerokość, więc polskie napisy nie powinny być ucinane.
-- Prawy panel Studio jest również szerszy, żeby pomieścić dłuższe polskie nazwy.
-- Cztery karty po prawej oszczędzają miejsce przez mniejsze wysokości pustych wierszy etykiet, a nie przez zmniejszanie czcionek.
-- Usuwanie AI, Dopracuj krawędzie, Ręczne poprawki i Eksport pozostają widoczne jednocześnie bez przewijania całego panelu.
-- Stopka `by Swir` i link GitHub są bardziej czytelne.
+### Naprawa uciętego dołu
+- Pasek miniaturek o wysokości 82px nie jest już stale widoczny.
+- Nowy przycisk **Pokaż miniatury / Ukryj miniatury** rozwija go tylko wtedy, gdy jest potrzebny.
+- F6 przełącza pasek miniaturek.
+- Pasek narzędzi, stopka i wysokości przycisków zostały zwarte bez zmniejszania czytelnych czcionek.
+- Na dole zostawiamy dodatkowy zapas dla paska zadań Windows i nietypowego skalowania DPI.
 
-### Zweryfikowany układ
-- Test GUI sprawdza teraz finalną klasę Studio, a nie wcześniejszą pośrednią wersję interfejsu.
-- W środowisku testowym Windows prawy panel miał 682 px wysokości, a komplet kart kończył się na 609 px — około 73 px zapasu.
-- Test sprawdza szerokość lewego panelu, granice przycisku Wyczyść, brak nakładania kart, widoczność Eksportu, minimalne rozmiary przycisków i minimalny rozmiar ważnych czcionek.
-- Test jednostkowy odtwarza również sytuację bez konsoli, czyli `stdout/stderr=None`, występującą w aplikacji PyInstaller `--windowed`.
+### Lepsza czytelność
+- Lewy panel projektu ma około 336px szerokości.
+- Wiersze plików projektu korzystają z czytelnej czcionki 10pt i pokazują dłuższe nazwy plików.
+- Przełącznik trybów Studio ma 9–10pt.
+- Najważniejsze przyciski edycji i eksportu zachowują czytelne rozmiary i minimalne wymiary.
 
-Pozostają wszystkie dotychczasowe funkcje: lokalne usuwanie tła AI, tryby Najwyższa jakość v2 / Jakość / Szybki / Portret, alpha matting, ręczne Przywróć/Usuń, Smart Cleanup, Usuń resztki, podmiana tła, zoom/przesuwanie, Cofnij/Ponów, batch, eksport PNG/JPG/WebP, procent postępu oraz LOG diagnostyczny.
+### Zachowane narzędzia profesjonalne
+- Najwyższa jakość v2 / Jakość / Szybki / Portret.
+- Alpha matting i dopracowanie krawędzi.
+- Ręczny edytor maski Przywróć / Usuń.
+- Smart Cleanup, Usuń resztki, Reset maski.
+- Zoom, przesuwanie, Cofnij / Ponów.
+- Podmiana tła, własny kolor, Rozmyj oryginał oraz tło białe/przezroczyste.
+- Batch oraz eksport PNG/JPG/WEBP.
+- Procent postępu, etapy pracy i pełny LOG diagnostyczny.
+- Stopka: **by Swir • github.com/Swir**.
+
+### Kontrola release
+- Smoke test Windows uruchamia teraz prawdziwą klasę Studio 0.3.4.
+- Sprawdza rzeczywisty sidebar, przełącznik Studio, zwinięty/rozwinięty pasek miniaturek, czcionki, rozmiary przycisków, nakładanie paneli i zapas na dole przy 1600×900.
+- Nadal działa self-test finalnego EXE sprawdzający rembg/pymatting/onnxruntime/tqdm.
