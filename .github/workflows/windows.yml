@@ -51,7 +51,12 @@ jobs:
           $pymattingMeta = Get-ChildItem dist/BackgroundPXR -Recurse -Directory | Where-Object { $_.Name -match '^pymatting-.*\.dist-info$' }
           if (-not $pymattingMeta) { throw 'pymatting dist-info metadata is missing from the frozen build.' }
           & .\dist\BackgroundPXR\BackgroundPXR.exe --self-test-runtime
-          if ($LASTEXITCODE -ne 0) { throw "BackgroundPXR bundled runtime self-test failed with exit code $LASTEXITCODE" }
+          $runtimeExit = $LASTEXITCODE
+          if (Test-Path backgroundpxr_runtime_selftest.txt) {
+            Write-Host '--- BackgroundPXR frozen runtime self-test ---'
+            Get-Content backgroundpxr_runtime_selftest.txt
+          }
+          if ($runtimeExit -ne 0) { throw "BackgroundPXR bundled runtime self-test failed with exit code $runtimeExit" }
       - name: Package release
         shell: pwsh
         run: |
