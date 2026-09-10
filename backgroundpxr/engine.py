@@ -53,6 +53,14 @@ class BackgroundEngine:
         self._sessions: dict[str, object] = {}
         self._lock = Lock()
 
+    @staticmethod
+    def _runtime_import_error(exc: BaseException) -> RuntimeError:
+        package = getattr(exc, "name", None) or type(exc).__name__
+        return RuntimeError(
+            f"AI runtime failed to load ({package}): {exc}. "
+            "The Windows build may be incomplete; open LOG and include this report when reporting the problem."
+        )
+
     def _get_session(self, model_label: str):
         model_name = MODEL_MAP.get(model_label, "birefnet-general")
         with self._lock:
@@ -60,7 +68,7 @@ class BackgroundEngine:
                 try:
                     from rembg import new_session
                 except ImportError as exc:
-                    raise RuntimeError("Background removal engine is missing. Install requirements.txt") from exc
+                    raise self._runtime_import_error(exc) from exc
                 self._sessions[model_name] = new_session(model_name)
             return self._sessions[model_name]
 
@@ -68,7 +76,7 @@ class BackgroundEngine:
         try:
             from rembg import remove
         except ImportError as exc:
-            raise RuntimeError("Background removal engine is missing. Install requirements.txt") from exc
+            raise self._runtime_import_error(exc) from exc
         source = ImageOps.exif_transpose(image).convert("RGBA")
         kwargs = dict(session=self._get_session(options.model_label), post_process_mask=True)
         if options.alpha_matting:
