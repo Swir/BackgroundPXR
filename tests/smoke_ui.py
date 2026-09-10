@@ -7,7 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.pro_ui import BackgroundPXRProApp
+from backgroundpxr.studio_ui import BackgroundPXRStudioApp
 from backgroundpxr.ui import create_root
 
 
@@ -22,7 +22,7 @@ def _font_size(widget) -> int:
 def main() -> None:
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRProApp(root)
+    app = BackgroundPXRStudioApp(root)
 
     try:
         root.state("normal")
@@ -41,8 +41,8 @@ def main() -> None:
     assert app._diag_percent_var.get() == "0%"
     assert app.diagnostics.path.name == "backgroundpxr.log"
 
-    assert app.left_panel.winfo_width() >= 300, "Left sidebar is too narrow at 1600x900"
-    assert app.clear_btn.winfo_width() >= 75, "Clear button is being clipped"
+    assert app.left_panel.winfo_width() >= 320, "Left sidebar is too narrow at 1600x900"
+    assert app.clear_btn.winfo_width() >= 80, "Clear button is being clipped"
     clear_parent = app.clear_btn.master
     assert app.clear_btn.winfo_x() + app.clear_btn.winfo_width() <= clear_parent.winfo_width() + 2, "Clear button extends beyond its header"
 
