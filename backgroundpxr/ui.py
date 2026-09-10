@@ -352,7 +352,7 @@ class BackgroundPXRApp:
         self.footer_by.grid(row=0, column=1, pady=4, sticky="e")
         self.footer_github = ctk.CTkButton(footer, text="", command=lambda: webbrowser.open(self.GITHUB_URL), height=22,
                                           fg_color="transparent", hover_color="#101A28", text_color="#4EDCFF",
-                                          font=ctk.CTkFont("Segoe UI", 9, "underline"), width=100)
+                                          font=ctk.CTkFont(family="Segoe UI", size=9, underline=True), width=100)
         self.footer_github.grid(row=0, column=2, padx=(6, 14), pady=4, sticky="e")
 
     def _apply_language(self) -> None:
@@ -568,10 +568,14 @@ class BackgroundPXRApp:
         self.root.after(100, self._poll_events)
 
     def _save_settings(self) -> None:
+        try:
+            padding = int(self.padding.get())
+        except Exception:
+            padding = 24
         self.settings_store.save({"language": self.language.get(), "model": self.model.get(), "background_mode": self.background_mode.get(),
                                   "background_color": self.bg_color, "background_blur": float(self.background_blur.get()),
                                   "export_format": self.export_format.get(), "edge_softness": float(self.edge_softness.get()),
-                                  "shadow": bool(self.shadow.get()), "trim": bool(self.trim.get()), "padding": int(self.padding.get()),
+                                  "shadow": bool(self.shadow.get()), "trim": bool(self.trim.get()), "padding": padding,
                                   "canvas_preset": self.canvas_preset.get(), "output_suffix": self.output_suffix.get(),
                                   "auto_open_output": bool(self.auto_open_output.get()), "output_dir": self.output_dir.get()})
 
