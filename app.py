@@ -1,9 +1,10 @@
-from backgroundpxr.ui import BackgroundPXRApp, create_root
+from backgroundpxr.diagnostics import BackgroundPXRDiagnosticsApp
+from backgroundpxr.ui import create_root
 
 
 def main() -> None:
     root = create_root()
-    BackgroundPXRApp(root)
+    BackgroundPXRDiagnosticsApp(root)
     root.mainloop()
 
 
