@@ -11,6 +11,14 @@ from backgroundpxr.pro_ui import BackgroundPXRProApp
 from backgroundpxr.ui import create_root
 
 
+def _font_size(widget) -> int:
+    font = widget.cget("font")
+    try:
+        return abs(int(font.cget("size")))
+    except Exception:
+        return 0
+
+
 def main() -> None:
     root = create_root()
     root.withdraw()
@@ -39,10 +47,20 @@ def main() -> None:
         app.refine_card,
         app.manual_card,
         app.export_card,
+        app.left_panel,
     ]
-    assert all(widget.winfo_exists() for widget in required)
+    assert all(widget is not None and widget.winfo_exists() for widget in required)
     assert app._diag_percent_var.get() == "0%"
     assert app.diagnostics.path.name == "backgroundpxr.log"
+
+    # The left project sidebar must stay wide enough for Polish text instead of
+    # clipping labels/buttons at the right edge.
+    assert app.left_panel.winfo_width() >= 300, "Left sidebar is too narrow at 1600x900"
+    assert app.clear_btn.winfo_width() >= 75, "Clear button is being clipped"
+    clear_parent = app.clear_btn.master
+    assert app.clear_btn.winfo_x() + app.clear_btn.winfo_width() <= clear_parent.winfo_width() + 2, (
+        "Clear button extends beyond its header"
+    )
 
     # The four studio cards must be fully visible and may never overlap.
     cards = [app.ai_card, app.refine_card, app.manual_card, app.export_card]
@@ -59,8 +77,25 @@ def main() -> None:
         assert button.winfo_width() >= 72
         assert button.winfo_height() >= 20
 
+    # 0.3.2 contained multiple 7pt labels. Keep important UI text readable.
+    readable_widgets = [
+        app.files_project,
+        app.add_images_btn,
+        app.add_folder_btn,
+        app.project_files,
+        app.ai_title,
+        app.model_label,
+        app.manual_title,
+        app.restore_btn,
+        app.export_title,
+        app.status_label,
+        app._diag_button,
+    ]
+    for widget in readable_widgets:
+        assert _font_size(widget) >= 9, f"Unreadably small font on {widget}: {_font_size(widget)}pt"
+
     root.destroy()
-    print("BackgroundPXR professional 1600x900 UI smoke test passed")
+    print("BackgroundPXR readable 1600x900 UI smoke test passed")
 
 
 if __name__ == "__main__":
