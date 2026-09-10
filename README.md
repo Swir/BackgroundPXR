@@ -4,6 +4,12 @@
 
 BackgroundPXR is a Windows desktop background-removal and creative cutout studio designed for fast local work with product photos, portraits and social media images.
 
+## Current version — 0.3.2
+
+Version 0.3.2 fixes the Windows portable AI runtime by explicitly bundling the `pymatting` distribution metadata required by `rembg`. Every release build now runs the finished EXE in a bundled AI runtime self-test before GitHub is allowed to publish it.
+
+The Professional UI shell is also tuned and automatically tested at **1600×900**. AI Removal, Refine Edges, Manual Cleanup, Export, progress percentage and LOG must all fit in the visible right panel without overlapping before a release can pass CI.
+
 ## Current feature set
 
 - Professional three-column Studio Editor interface with PXR cyan/violet branding.
@@ -43,7 +49,7 @@ python app.py
 
 ## Windows releases
 
-The GitHub workflow tests every update. It performs syntax checks, unit tests and a real Windows GUI startup smoke test. A commit whose message starts with `release:` additionally installs the full application dependencies, generates the PXR Windows icon, builds the portable application with PyInstaller, creates a ZIP and SHA-256 checksum, uploads the artifact and publishes a GitHub Release.
+The GitHub workflow tests every update. It performs syntax checks, unit tests and a real Windows GUI startup smoke test at 1600×900. A commit whose message starts with `release:` additionally installs the full application dependencies, generates the PXR Windows icon, builds the portable application with PyInstaller, verifies bundled `pymatting` metadata, runs the finished `BackgroundPXR.exe --self-test-runtime`, creates a ZIP and SHA-256 checksum, uploads the artifact and publishes a GitHub Release.
 
 ## Project identity
 
