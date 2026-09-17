@@ -1,186 +1,134 @@
+<!-- SWIR-README-STANDARD:v2 -->
+
 <div align="center">
+
+<img width="100%" src="assets/readme/hero.svg" alt="BackgroundPXR — local AI Background Studio for Windows" />
 
 # BackgroundPXR
 
-### AI Background Studio for Windows
+**Local AI background removal, replacement, blur and manual edge refinement for Windows.**
 
-**Remove backgrounds • Replace backgrounds • Blur backgrounds • Refine edges • Export transparent PNGs**
+![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-02050A?style=for-the-badge&logo=windows11&logoColor=62E5FF)
+![Python](https://img.shields.io/badge/Python-3.12-02050A?style=for-the-badge&logo=python&logoColor=62E5FF)
+![Processing](https://img.shields.io/badge/Processing-Local%20AI-02050A?style=for-the-badge&logoColor=62E5FF)
+![Release](https://img.shields.io/badge/Release-v0.3.4-02050A?style=for-the-badge&logo=github&logoColor=62E5FF)
 
-A privacy-first **AI background remover for Windows** with local processing, batch workflow, manual mask cleanup and professional background editing tools.
+[![Author](https://img.shields.io/badge/by-Swir-0088FF?style=flat-square&logo=github)](https://github.com/Swir)
+[![Stars](https://img.shields.io/github/stars/Swir/BackgroundPXR?style=flat-square&color=0088FF)](https://github.com/Swir/BackgroundPXR/stargazers)
 
-**Power eXtreme Remover — by Swir**
-
-[Download latest release](https://github.com/Swir/BackgroundPXR/releases/latest) · [All releases](https://github.com/Swir/BackgroundPXR/releases) · [GitHub profile](https://github.com/Swir)
-
-![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-1678C2?style=for-the-badge&logo=windows11&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Local AI](https://img.shields.io/badge/AI-Local%20Processing-16C784?style=for-the-badge)
-![Release](https://img.shields.io/github/v/release/Swir/BackgroundPXR?style=for-the-badge)
+[**Highlights**](#-highlights) · [**Download**](#-quick-start) · [**Workflow**](#-workflow) · [**Progress**](#-progress) · [**Releases**](#-releases)
 
 </div>
 
----
+<img width="100%" src="https://raw.githubusercontent.com/Swir/Swir/main/assets/power-divider-v4.svg" alt="SWIR electric divider" />
 
-## What is BackgroundPXR?
+## 📍 Project Status
 
-**BackgroundPXR — AI Background Studio** is a desktop photo tool for Windows 10/11 built for people who want to **remove a background from an image without uploading the photo to a cloud service**.
+| Item | Status |
+|---|---|
+| Current line | **0.3.4 — AI Background Studio Foundation** |
+| Platform | Windows 10 / 11 |
+| Processing | Local after the required AI model is available |
+| Latest public release | [v0.3.4](https://github.com/Swir/BackgroundPXR/releases/tag/v0.3.4) |
+| Product progress | **N/A** — no canonical roadmap with a reproducible completion denominator |
 
-It combines automatic AI cutout tools with a manual mask editor, background replacement, blur effects, batch processing and export presets. It is designed for product photos, portraits, marketplace listings, social media graphics and transparent PNG creation.
+<p align="center">
+  <img width="100%" src="assets/readme/progress-card.svg" alt="BackgroundPXR product readiness progress — N/A" />
+</p>
 
-BackgroundPXR can be used as an **offline background remover**, **AI cutout editor**, **transparent PNG maker**, **product photo background remover**, **portrait background remover** and **batch background removal tool for Windows**.
+**Product progress: N/A.** The repository contains planned directions, but not a checklist or weighted roadmap that can honestly produce a 0–100% completion value.
 
-> AI models may download automatically the first time they are used. After the required model is available locally, image processing is performed on your computer.
+## 🚀 Overview
 
----
+**BackgroundPXR — AI Background Studio** is a Windows desktop application for removing and editing photo backgrounds without sending each image to a BackgroundPXR cloud service. It combines AI subject masks with manual cleanup, background replacement, blur, batch processing and export presets.
 
-## Download for Windows
+The AI model may need to be downloaded when first used. After the required model is available, image processing is performed locally on the computer.
 
-### Latest version: **0.3.4 — AI Background Studio Foundation**
+## ✨ Highlights
 
-Download the newest portable Windows build from:
+| Feature | What it does |
+|---|---|
+| ✂️ AI Cutout | Creates a transparent subject mask using local AI processing. |
+| 🖼️ Replace | Reuses the subject mask with a custom image or solid-color background. |
+| 🌫️ Blur | Keeps the subject sharp while blurring the original background. |
+| 💡 Studio | Produces a clean white-background result with optional soft shadow. |
+| 🖌️ Manual Cleanup | Restore / Erase brushes, zoom, pan, undo/redo and cleanup helpers for difficult edges. |
+| 🧑 Portrait & quality modes | High Quality v2, Quality, Fast and Portrait processing modes. |
+| 📦 Batch workflow | Processes one or multiple images and supports custom output folders/suffixes. |
+| 💾 Export | PNG transparency plus JPG and WebP output, with common canvas presets. |
+| 🧾 Diagnostics | Shows live processing state and records errors with tracebacks for troubleshooting. |
 
-### [Download BackgroundPXR for Windows](https://github.com/Swir/BackgroundPXR/releases/latest)
+## ⚙️ Quick Start
 
-1. Download `BackgroundPXR-0.3.4-Windows.zip` from **Releases**.
-2. Extract the ZIP to a normal folder.
-3. Run `BackgroundPXR.exe`.
-4. Add an image and choose an AI mode.
-5. Review the cutout, fix difficult edges if needed, then export.
+### Recommended — Windows portable release
 
-No separate Python installation is required for the packaged Windows release.
+Download [BackgroundPXR v0.3.4](https://github.com/Swir/BackgroundPXR/releases/tag/v0.3.4), then:
 
----
+1. Download `BackgroundPXR-0.3.4-Windows.zip`.
+2. Extract the archive to a normal folder.
+3. Run `BackgroundPXR.exe` from the extracted application folder.
+4. Add an image, choose a Studio mode and AI quality mode.
+5. Review the cutout, refine difficult edges if needed, then export.
 
-## AI Background Studio
+The packaged Windows release does not require a separate Python installation.
 
-BackgroundPXR is evolving from a simple background remover into a complete **AI Background Studio**.
+### From source
 
-| Studio mode | What it does |
-| --- | --- |
-| **Cutout** | Removes the image background and creates a transparent subject |
-| **Replace** | Replaces the original background with a custom image or solid color |
-| **Blur** | Keeps the subject sharp while blurring the original background |
-| **Studio** | Creates a clean studio-style result with a white background and optional soft shadow |
+```powershell
+git clone https://github.com/Swir/BackgroundPXR.git
+cd BackgroundPXR
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+python app.py
+```
 
-The same AI subject mask can be refined and reused, so you can experiment with different backgrounds without repeatedly cutting out the subject manually.
+An Internet connection may be needed for the first download of a required AI model.
 
----
+## 📋 Requirements / Compatibility
 
-## Main features
+| Component | Current scope |
+|---|---|
+| Primary OS | Windows 10 / 11 |
+| Source runtime | Python 3.12 in the project workflow |
+| AI/runtime packages | Installed from `requirements.txt`; release checks cover the bundled `rembg` / `pymatting` / `onnxruntime` runtime path |
+| GUI | CustomTkinter/Tk-based desktop interface |
+| Release packaging | PyInstaller portable folder inside a ZIP |
 
-### AI background removal
+The application is designed around Windows. Repository checks do not establish a supported packaged Linux/macOS release.
 
-- **High Quality v2**, Quality, Fast and Portrait processing modes
-- Fine hair and difficult-edge handling with **alpha matting**
-- Expand / shrink subject mask
-- Feather control
-- Mask contrast control
-- Transparent, white, custom-color, image and blurred backgrounds
-- Local AI processing after the required model is available
+## 🎮 Workflow
 
-### Manual Cleanup Editor
+### Studio modes
 
-AI segmentation is not perfect on every photo. BackgroundPXR includes tools for fixing difficult areas instead of forcing you to start again.
+| Mode | Purpose |
+|---|---|
+| **Cutout** | Transparent subject output |
+| **Replace** | Custom image or solid-color background |
+| **Blur** | Blur the original background behind the subject |
+| **Studio** | White studio-style base with optional soft shadow |
 
-- **Restore brush** — bring back parts of the subject removed by AI
-- **Erase brush** — remove leftover background manually
-- Brush size and hardness controls
-- Zoom up to **800%**
-- Pan / Fit view
-- Undo / Redo
-- Smart Cleanup
-- Remove Leftovers
-- Reset Mask
+### Manual refinement
 
-This makes BackgroundPXR useful for hair, clothing edges, product contours and other areas where an automatic background remover may need a final manual correction.
+- **Restore brush** brings back subject areas removed by the AI mask.
+- **Erase brush** removes remaining background areas.
+- Brush size/hardness, zoom up to 800%, pan/Fit view and Undo/Redo support precise corrections.
+- Smart Cleanup, Remove Leftovers and Reset Mask provide additional mask operations.
 
-### Background creation and replacement
+### Background and export options
 
-- Transparent background
-- White background
-- Custom solid color
-- Custom replacement image
-- Blur original background
-- Soft shadow
-- Auto crop
-- Padding controls
-- Product and portrait presets
+- transparent, white or custom-color background;
+- custom replacement image;
+- blurred original background;
+- soft shadow, auto crop and padding controls;
+- PNG / JPG / WebP export;
+- Original, 1:1, 4:5, 9:16, 16:9 and Product 2000×2000 canvas presets.
 
-### Export and batch processing
-
-- PNG export with transparency
-- JPG export
-- WebP export
-- Process one image or multiple images
-- Batch background removal
-- Output filename suffix
-- Custom output folder
-- Optional automatic opening of the output folder
-- Canvas presets:
-  - Original size
-  - Square 1:1
-  - Portrait 4:5
-  - Story 9:16
-  - Landscape 16:9
-  - Product 2000×2000
-
----
-
-## Built for real workflows
-
-BackgroundPXR is useful when you need a fast **background remover for product photos**, marketplace listings, portraits or social media graphics.
-
-Typical use cases include:
-
-- removing backgrounds from product photos for e-commerce
-- preparing transparent PNG files for websites and graphic design
-- replacing photo backgrounds without Photoshop
-- creating clean white-background marketplace images
-- blurring portrait backgrounds
-- cutting out people and objects from photos
-- processing multiple images in one batch
-- manually repairing imperfect AI masks
-- creating social-media-ready images in common aspect ratios
-- working with private photos locally instead of uploading them to an online background remover
-
----
-
-## Privacy-first local processing
-
-BackgroundPXR is designed around local desktop processing.
-
-- No account is required by the application
-- Photos are processed locally after the required AI model is available
-- The editor does not require uploading your images to a BackgroundPXR server
-- Settings and diagnostics are stored locally
-
-This makes it suitable for users searching for a **local AI background remover**, **offline image background remover** or a **background removal tool without photo uploads**.
-
----
-
-## Live progress and diagnostics
-
-You should always know whether the application is working.
-
-BackgroundPXR displays:
-
-- live processing percentage
-- current image name
-- current processing stage
-- elapsed time during long AI operations
-- batch progress
-- success / error state
-
-The built-in **LOG** window records technical errors with a unique `PXR-...` error ID and full traceback. The report can be copied directly for troubleshooting.
-
-This diagnostic system is also used during development to catch packaging and AI-runtime problems before a Windows release is published.
-
----
-
-## Keyboard shortcuts
+## ⌨️ Keyboard Shortcuts
 
 | Shortcut | Action |
-| --- | --- |
+|---|---|
 | `Ctrl + Z` | Undo |
 | `Ctrl + Y` | Redo |
 | `Ctrl + +` | Zoom in |
@@ -191,135 +139,86 @@ This diagnostic system is also used during development to catch packaging and AI
 | `Alt + 3` | Blur mode |
 | `Alt + 4` | Studio mode |
 
----
+## 🔒 Privacy & Local Processing
 
-## Run from source
+- No BackgroundPXR account is required by the application.
+- Photos are processed locally after the required model is present.
+- The editor does not require uploading source images to a BackgroundPXR server.
+- Settings and diagnostic information are stored locally.
 
-### Requirements
+The initial AI-model download is separate from photo processing; an Internet connection can therefore still be required before a model is cached locally.
 
-- Windows 10 or Windows 11 recommended
-- Python 3.12
-- Internet connection may be required for the first download of an AI model
+## 🧠 Technology / Project Structure
+
+| Area | Repository path / role |
+|---|---|
+| Entry point | `app.py` |
+| Processing | `backgroundpxr/engine.py` |
+| Manual mask editing | `backgroundpxr/editor.py` |
+| Diagnostics | `backgroundpxr/diagnostics.py` |
+| Localization | `backgroundpxr/i18n.py` |
+| UI | `backgroundpxr/ui.py` and Studio/UI modules |
+| Packaging | `BackgroundPXR.spec` + `.github/workflows/windows.yml` |
+| Tests | `tests/` unit/static/runtime tests and Windows GUI smoke |
+
+## 🗺️ Progress
+
+<p align="center">
+  <img width="100%" src="assets/readme/progress-mini.svg" alt="BackgroundPXR compact product progress — N/A" />
+</p>
+
+The repository describes future directions such as richer Studio backgrounds, stronger bokeh controls, outline/sticker effects, mask export and a possible future PySide6/QML UI. Those are **planning directions**, not an authoritative completion denominator, so no product percentage is invented.
+
+`tools/readme_progress.py` keeps this N/A state deterministic and will refuse to regenerate it if a root roadmap file appears before the calculation model is updated:
 
 ```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-python app.py
+python tools/readme_progress.py --check
 ```
 
----
+## 🧪 Release Quality Checks
 
-## Release quality checks
+The Windows workflow runs on pull requests and pushes. Its test job currently performs:
 
-Windows releases are automatically checked before publication.
+- Python syntax compilation;
+- unit tests;
+- GUI startup smoke test.
 
-The CI pipeline performs:
+Release builds additionally package the application, verify bundled runtime metadata, run the frozen AI-runtime self-test, create the ZIP and SHA-256 sidecar, and publish only on the workflow's release path. This documentation migration does not create a release.
 
-- Python syntax validation
-- unit tests
-- real GUI startup smoke test
-- 1600×900 layout validation
-- Windows portable build with PyInstaller
-- bundled `rembg`, `pymatting` and `onnxruntime` checks
-- frozen EXE runtime self-test
-- `tqdm` / no-console runtime test
-- ZIP packaging
-- SHA-256 checksum generation
+## 📦 Releases
 
-A release build is blocked when one of these required checks fails.
+Latest public release: **[v0.3.4](https://github.com/Swir/BackgroundPXR/releases/tag/v0.3.4)**, published September 10, 2026. It provides `BackgroundPXR-0.3.4-Windows.zip` and its SHA-256 sidecar.
 
----
+[**Browse all releases →**](https://github.com/Swir/BackgroundPXR/releases)
 
-## Roadmap
+## ⚠️ Limitations
 
-BackgroundPXR is actively evolving into a larger photo background studio.
+- AI segmentation is probabilistic; hair, fur, glass, smoke, semi-transparent materials and low-contrast edges can need manual correction.
+- Always inspect important exports before publishing them.
+- Model availability/downloads can affect first-run readiness.
+- A successful automated test does not guarantee a perfect cutout for every photograph.
+- The repository currently has no `LICENSE` file; this documentation migration does not change licensing terms.
 
-Planned directions include:
+## 🇵🇱 Polski — skrót
 
-- richer Studio background presets
-- gradient backgrounds
-- stronger portrait blur / bokeh controls
-- outline and sticker effects
-- improved configurable shadows
-- export of the AI mask itself
-- more marketplace and social presets
-- stronger manual edge-editing workflow
-- mask overlay views
-- additional keyboard shortcuts
-- future professional UI migration to **PySide6 + QML**
+**BackgroundPXR** to aplikacja dla Windows 10/11 do lokalnego usuwania i edycji tła zdjęć przy użyciu AI. Oferuje tryby **Wytnij / Podmień / Rozmyj / Studio**, przezroczyste PNG, własne tło lub kolor, alpha matting, ręczne narzędzia **Przywróć / Usuń**, zoom do 800%, Cofnij/Ponów, batch i eksport PNG/JPG/WebP. Po pobraniu potrzebnego modelu zdjęcia są przetwarzane lokalnie.
 
----
+Pobierz aktualną wersję: **[BackgroundPXR v0.3.4](https://github.com/Swir/BackgroundPXR/releases/tag/v0.3.4)**.
 
-## Search-friendly project description
+## 🔎 Search Keywords
 
-If you found this repository while looking for a **free AI background remover for Windows**, **offline background remover**, **remove background from image app**, **transparent PNG background remover**, **batch background remover**, **AI background replacement tool**, **product photo background remover**, **portrait cutout tool**, **local AI photo editor**, **remove background without uploading**, or a **Windows alternative to online background removal tools**, BackgroundPXR is built around exactly those workflows.
+`AI background remover Windows` • `offline background remover` • `local AI photo editor` • `transparent PNG maker` • `product photo background remover` • `portrait background remover` • `batch background removal` • `manual mask editor` • `background replacement tool` • `blur photo background` • `alpha matting Windows` • `local image cutout` • `Windows photo background studio` • `remove background without upload`
 
-The project focuses on local AI cutouts, manual correction and practical desktop workflow rather than requiring a web account for every edit.
-
----
-
-# Polski
-
-## BackgroundPXR — AI Background Studio
-
-**BackgroundPXR** to aplikacja dla Windows 10/11 do lokalnego **usuwania tła ze zdjęć przy pomocy AI**, podmiany tła, rozmywania tła, tworzenia przezroczystych PNG i ręcznego poprawiania niedoskonałych masek.
-
-Program jest rozwijany jako pełne **AI Background Studio**, a nie tylko prosty background remover.
-
-### Najważniejsze możliwości
-
-- automatyczne usuwanie tła AI
-- tryby Najwyższa jakość v2 / Jakość / Szybki / Portret
-- przezroczyste PNG
-- białe i kolorowe tło
-- podmiana tła własnym zdjęciem
-- rozmywanie oryginalnego tła
-- alpha matting do włosów i trudnych krawędzi
-- ręczne narzędzia **Przywróć / Usuń**
-- zoom do 800%
-- Cofnij / Ponów
-- Smart Cleanup i Usuń resztki
-- przetwarzanie wielu zdjęć
-- eksport PNG / JPG / WebP
-- presety 1:1, 4:5, 9:16, 16:9 i Produkt 2000×2000
-- procent postępu i pełny LOG diagnostyczny
-- lokalne przetwarzanie zdjęć po pobraniu potrzebnego modelu AI
-
-### Dla kogo?
-
-BackgroundPXR może przydać się do:
-
-- zdjęć produktów do sklepów internetowych
-- ofert marketplace
-- portretów
-- grafik na social media
-- wycinania osób i przedmiotów
-- tworzenia przezroczystych plików PNG
-- masowego usuwania tła
-- lokalnej pracy ze zdjęciami bez wysyłania ich do serwera BackgroundPXR
-
-### Pobierz
-
-### [Pobierz najnowszą wersję BackgroundPXR](https://github.com/Swir/BackgroundPXR/releases/latest)
-
----
-
-## Notes
-
-AI background segmentation is probabilistic. Hair, fur, glass, smoke, semi-transparent materials and very low-contrast edges may require manual correction. Always review important images before publishing them.
-
----
+<img width="100%" src="https://raw.githubusercontent.com/Swir/Swir/main/assets/power-divider-v4.svg" alt="SWIR electric divider" />
 
 <div align="center">
 
-### BackgroundPXR — Power eXtreme Remover
+<img src="assets/readme/project-icon.svg" width="72" alt="BackgroundPXR documentation icon" />
 
-**Remove. Replace. Create.**
+### `REMOVE • REFINE • CREATE`
 
-Created and developed **by Swir**
+**BackgroundPXR — Power eXtreme Remover, by Swir**
 
-[github.com/Swir](https://github.com/Swir)
+[**← SWIR profile**](https://github.com/Swir) · [**All projects →**](https://github.com/Swir?tab=repositories) · [**Report an issue**](https://github.com/Swir/BackgroundPXR/issues)
 
 </div>
