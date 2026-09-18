@@ -194,10 +194,12 @@ class BackgroundPXRStudio040App(BackgroundPXRStudio034FixedApp):
         self._build_refine_card(self.ai_page)
 
         self._build_manual_card(self.create_page)
+        self.manual_card.grid_configure(row=0)
         self._build_subject_card(self.create_page)
         self._build_style_card(self.create_page)
 
         self._build_export_card(self.export_page)
+        self.export_card.grid_configure(row=0)
         self._build_mask_export_card(self.export_page)
 
         # Keep readable controls; page navigation means we no longer have to
