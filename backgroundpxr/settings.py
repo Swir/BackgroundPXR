@@ -36,6 +36,8 @@ DEFAULTS = {
     "shadow_blur": 18.0,
     "shadow_offset_x": 12,
     "shadow_offset_y": 18,
+    "spill_cleanup": False,
+    "spill_strength": 55,
     "preview_mode": "result",
 }
 
