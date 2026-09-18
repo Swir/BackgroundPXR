@@ -11,7 +11,7 @@
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-02050A?style=for-the-badge&logo=windows11&logoColor=62E5FF)
 ![Python](https://img.shields.io/badge/Python-3.12-02050A?style=for-the-badge&logo=python&logoColor=62E5FF)
 ![Processing](https://img.shields.io/badge/Processing-Local%20AI-02050A?style=for-the-badge&logoColor=62E5FF)
-![Release](https://img.shields.io/badge/Release-v0.3.4-02050A?style=for-the-badge&logo=github&logoColor=62E5FF)
+![Release](https://img.shields.io/badge/Release-v0.4.0-02050A?style=for-the-badge&logo=github&logoColor=62E5FF)
 
 [![Author](https://img.shields.io/badge/by-Swir-0088FF?style=flat-square&logo=github)](https://github.com/Swir)
 [![Stars](https://img.shields.io/github/stars/Swir/BackgroundPXR?style=flat-square&color=0088FF)](https://github.com/Swir/BackgroundPXR/stargazers)
@@ -26,10 +26,10 @@
 
 | Item | Status |
 |---|---|
-| Current line | **0.3.4 — AI Background Studio Foundation** |
+| Current line | **0.4.0 — Studio Pro** |
 | Platform | Windows 10 / 11 |
 | Processing | Local after the required AI model is available |
-| Latest public release | [v0.3.4](https://github.com/Swir/BackgroundPXR/releases/tag/v0.3.4) |
+| Latest public release | [v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0) |
 | Product progress | **N/A** — no canonical roadmap with a reproducible completion denominator |
 
 <p align="center">
@@ -56,15 +56,19 @@ The AI model may need to be downloaded when first used. After the required model
 | 🧑 Portrait & quality modes | High Quality v2, Quality, Fast and Portrait processing modes. |
 | 📦 Batch workflow | Processes one or multiple images and supports custom output folders/suffixes. |
 | 💾 Export | PNG transparency plus JPG and WebP output, with common canvas presets. |
+| 🎯 Subject Transform | Scale and reposition the cutout without rerunning AI. |
+| ✨ Outline / Sticker | Add a customizable outline for sticker-style and social graphics. |
+| 🌑 Pro Shadow | Adjustable shadow opacity and blur for cleaner product/portrait compositions. |
+| 🎭 Mask Preview & Export | Inspect the mask on black/white mattes or export the alpha mask as PNG. |
 | 🧾 Diagnostics | Shows live processing state and records errors with tracebacks for troubleshooting. |
 
 ## ⚙️ Quick Start
 
 ### Recommended — Windows portable release
 
-Download [BackgroundPXR v0.3.4](https://github.com/Swir/BackgroundPXR/releases/tag/v0.3.4), then:
+Download [BackgroundPXR v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0), then:
 
-1. Download `BackgroundPXR-0.3.4-Windows.zip`.
+1. Download `BackgroundPXR-0.4.0-Windows.zip`.
 2. Extract the archive to a normal folder.
 3. Run `BackgroundPXR.exe` from the extracted application folder.
 4. Add an image, choose a Studio mode and AI quality mode.
@@ -109,7 +113,19 @@ The application is designed around Windows. Repository checks do not establish a
 | **Blur** | Blur the original background behind the subject |
 | **Studio** | White studio-style base with optional soft shadow |
 
+### Studio Pro inspector
+
+The 0.4 line introduces a cleaner three-page inspector: **AI / CREATE / EXPORT**. Creative controls no longer have to compete for vertical space in one long panel.
+
+- scale and position the subject after AI processing;
+- add a custom-color outline / sticker border;
+- control shadow opacity and blur;
+- preview result, grayscale mask, black matte or white matte;
+- export the current refined mask as PNG;
+- use Sticker, Product and Portrait style presets.
+
 ### Manual refinement
+
 
 - **Restore brush** brings back subject areas removed by the AI mask.
 - **Erase brush** removes remaining background areas.
@@ -187,7 +203,7 @@ Release builds additionally package the application, verify bundled runtime meta
 
 ## 📦 Releases
 
-Latest public release: **[v0.3.4](https://github.com/Swir/BackgroundPXR/releases/tag/v0.3.4)**, published September 10, 2026. It provides `BackgroundPXR-0.3.4-Windows.zip` and its SHA-256 sidecar.
+Latest public release: **[v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0)**, published September 10, 2026. It provides `BackgroundPXR-0.4.0-Windows.zip` and its SHA-256 sidecar.
 
 [**Browse all releases →**](https://github.com/Swir/BackgroundPXR/releases)
 
@@ -203,11 +219,11 @@ Latest public release: **[v0.3.4](https://github.com/Swir/BackgroundPXR/releases
 
 **BackgroundPXR** to aplikacja dla Windows 10/11 do lokalnego usuwania i edycji tła zdjęć przy użyciu AI. Oferuje tryby **Wytnij / Podmień / Rozmyj / Studio**, przezroczyste PNG, własne tło lub kolor, alpha matting, ręczne narzędzia **Przywróć / Usuń**, zoom do 800%, Cofnij/Ponów, batch i eksport PNG/JPG/WebP. Po pobraniu potrzebnego modelu zdjęcia są przetwarzane lokalnie.
 
-Pobierz aktualną wersję: **[BackgroundPXR v0.3.4](https://github.com/Swir/BackgroundPXR/releases/tag/v0.3.4)**.
+Pobierz aktualną wersję: **[BackgroundPXR v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0)**.
 
 ## 🔎 Search Keywords
 
-`AI background remover Windows` • `offline background remover` • `local AI photo editor` • `transparent PNG maker` • `product photo background remover` • `portrait background remover` • `batch background removal` • `manual mask editor` • `background replacement tool` • `blur photo background` • `alpha matting Windows` • `local image cutout` • `Windows photo background studio` • `remove background without upload`
+`AI background remover Windows` • `offline background remover` • `local AI photo editor` • `transparent PNG maker` • `product photo background remover` • `portrait background remover` • `batch background removal` • `manual mask editor` • `background replacement tool` • `blur photo background` • `alpha matting Windows` • `local image cutout` • `Windows photo background studio` • `remove background without upload` • `sticker maker Windows` • `PNG mask export` • `subject positioning photo editor` • `AI product photo editor` • `outline cutout tool`
 
 <img width="100%" src="https://raw.githubusercontent.com/Swir/Swir/main/assets/power-divider-v4.svg" alt="SWIR electric divider" />
 
