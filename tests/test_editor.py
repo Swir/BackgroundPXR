@@ -34,3 +34,41 @@ def test_remove_small_island():
     assert removed >= 1
     assert ed.alpha.getpixel((4, 4)) == 0
     assert ed.alpha.getpixel((50, 50)) == 255
+
+
+def test_paint_segment_fills_fast_drag_without_gaps_and_uses_one_undo_step():
+    original = Image.new("RGBA", (160, 80), (120, 80, 40, 255))
+    alpha = Image.new("L", original.size, 255)
+    cut = original.copy(); cut.putalpha(alpha)
+    ed = MaskEditor(original, cut)
+    settings = BrushSettings(20, 100)
+
+    ed.begin_stroke()
+    stamps = ed.paint_segment(20, 40, 140, 40, "erase", settings)
+    ed.end_stroke()
+
+    assert stamps >= 20
+    for x in range(20, 141, 5):
+        assert ed.alpha.getpixel((x, 40)) == 0
+    assert ed.can_undo
+    assert ed.undo()
+    for x in range(20, 141, 10):
+        assert ed.alpha.getpixel((x, 40)) == 255
+
+
+def test_paint_segment_can_skip_duplicate_start_stamp():
+    original = Image.new("RGBA", (80, 40), (10, 20, 30, 255))
+    alpha = Image.new("L", original.size, 255)
+    cut = original.copy(); cut.putalpha(alpha)
+    ed = MaskEditor(original, cut)
+
+    ed.begin_stroke()
+    ed.paint(10, 20, "erase", BrushSettings(16, 100))
+    stamps = ed.paint_segment(
+        10, 20, 60, 20, "erase", BrushSettings(16, 100), include_start=False
+    )
+    ed.end_stroke()
+
+    assert stamps > 1
+    assert ed.alpha.getpixel((35, 20)) == 0
+    assert ed.alpha.getpixel((60, 20)) == 0
