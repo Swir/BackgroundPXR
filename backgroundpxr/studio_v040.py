@@ -632,12 +632,27 @@ class BackgroundPXRStudio040App(BackgroundPXRStudio034FixedApp):
             self.outline.set(True)
             self._studio_recompose()
 
+
+    def _studio_mode_label(self, mode: str) -> str:
+        try:
+            from .studio_v034 import stx
+            return stx(self.language.get(), mode)
+        except Exception:
+            return {
+                "cutout": "Cutout",
+                "replace": "Replace",
+                "blur": "Blur",
+                "studio": "Studio",
+            }.get(mode, "Cutout")
+
     def _preset_sticker(self):
         self.outline.set(True)
         self.outline_width.set(8)
         self.outline_color = "#FFFFFF"
         self.shadow.set(False)
         self.background_mode.set("transparent")
+        self.studio_mode.set("cutout")
+        self.studio_mode_bar.set(self._studio_mode_label("cutout"))
         self._sync_background_menu()
         self._studio_recompose()
 
@@ -650,6 +665,8 @@ class BackgroundPXRStudio040App(BackgroundPXRStudio034FixedApp):
         self.subject_offset_x.set(0)
         self.subject_offset_y.set(0)
         self.background_mode.set("white")
+        self.studio_mode.set("studio")
+        self.studio_mode_bar.set(self._studio_mode_label("studio"))
         self._sync_background_menu()
         self._studio_recompose()
 
@@ -660,6 +677,8 @@ class BackgroundPXRStudio040App(BackgroundPXRStudio034FixedApp):
         self.subject_offset_x.set(0)
         self.subject_offset_y.set(0)
         self.background_mode.set("blur")
+        self.studio_mode.set("blur")
+        self.studio_mode_bar.set(self._studio_mode_label("blur"))
         self._sync_background_menu()
         self._studio_recompose()
 
