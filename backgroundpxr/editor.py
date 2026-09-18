@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+from math import ceil, hypot
 
 from PIL import Image, ImageChops, ImageFilter, ImageOps
 
@@ -80,6 +81,41 @@ class MaskEditor:
         local_alpha = self.alpha.crop((ix0, iy0, ix1, iy1))
         edited = ImageChops.screen(local_alpha, local_brush) if mode == "restore" else ImageChops.multiply(local_alpha, ImageOps.invert(local_brush))
         self.alpha.paste(edited, (ix0, iy0))
+
+    def paint_segment(
+        self,
+        start_x: float,
+        start_y: float,
+        end_x: float,
+        end_y: float,
+        mode: str,
+        settings: BrushSettings,
+        *,
+        include_start: bool = True,
+    ) -> int:
+        """Paint a continuous segment by interpolating brush stamps.
+
+        GUI motion events can be sparse when the pointer moves quickly. Stamping
+        only at those events leaves visible holes in erase/restore strokes. This
+        helper spaces stamps at most about one fifth of the brush diameter apart,
+        keeping fast drags continuous without changing the existing brush look.
+
+        Returns the number of stamps applied, which is useful for diagnostics and
+        tests. The whole segment remains part of the current undo stroke.
+        """
+        size = max(3, min(500, int(settings.size)))
+        distance = hypot(float(end_x) - float(start_x), float(end_y) - float(start_y))
+        spacing = max(1.0, size * 0.20)
+        steps = max(1, int(ceil(distance / spacing)))
+        first = 0 if include_start else 1
+        stamps = 0
+        for index in range(first, steps + 1):
+            t = index / steps
+            x = float(start_x) + (float(end_x) - float(start_x)) * t
+            y = float(start_y) + (float(end_y) - float(start_y)) * t
+            self.paint(x, y, mode, settings)
+            stamps += 1
+        return stamps
 
     def undo(self) -> bool:
         if not self._undo:
