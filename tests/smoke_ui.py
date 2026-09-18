@@ -7,7 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.studio_v040 import BackgroundPXRStudio040App
+from backgroundpxr.studio_v041 import BackgroundPXRStudio041App
 from backgroundpxr.ui import create_root
 
 
@@ -29,7 +29,7 @@ def _page_fits(page, widgets):
 def main() -> None:
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRStudio040App(root)
+    app = BackgroundPXRStudio041App(root)
 
     try:
         root.state("normal")
@@ -86,7 +86,7 @@ def main() -> None:
     root.update_idletasks()
     assert not app._filmstrip_expanded
 
-    # New Studio Pro inspector uses pages so controls do not need to be crushed.
+    # Studio Pro inspector uses pages so controls do not need to be crushed.
     assert app.right_panel.winfo_width() >= 420
     assert len(app.inspector_tabs.cget("values")) == 3
 
@@ -113,10 +113,11 @@ def main() -> None:
         f"Export inspector clipped: {export_bottom}>{export_h}"
     )
 
-    # New creative controls are wired and usable.
+    # Creative controls are wired and usable.
     assert app.subject_scale.get() > 0
     assert app.outline_width.get() >= 1
-    assert len(app.preview_selector.cget("values")) == 4
+    assert len(app.preview_selector.cget("values")) == 5
+    assert app._preview_label("edge") in app.preview_selector.cget("values")
     assert 0 <= app.spill_strength.get() <= 100
     assert app.export_mask_btn.winfo_height() >= 30
 
@@ -155,7 +156,7 @@ def main() -> None:
         )
 
     root.destroy()
-    print("BackgroundPXR Studio Pro 0.4 smoke test passed")
+    print("BackgroundPXR Studio Pro smoke test passed")
 
 
 if __name__ == "__main__":
