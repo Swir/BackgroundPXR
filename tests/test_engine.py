@@ -88,6 +88,20 @@ def test_mask_image_uses_cutout_alpha():
     assert mask.getbbox() == (5, 5, 15, 15)
 
 
+
+def test_color_spill_cleanup_reduces_dominant_green_edge():
+    cutout = Image.new("RGBA", (40, 40), (40, 220, 50, 0))
+    alpha = Image.new("L", (40, 40), 0)
+    alpha.paste(255, (10, 10, 30, 30))
+    cutout.putalpha(alpha)
+
+    cleaned = BackgroundEngine._decontaminate_color_spill(cutout, 100)
+    before_g = cutout.convert("RGB").getchannel("G").getpixel((10, 10))
+    after_g = cleaned.convert("RGB").getchannel("G").getpixel((10, 10))
+    assert after_g <= before_g
+    assert cleaned.getchannel("A").tobytes() == alpha.tobytes()
+
+
 def test_save_mask(tmp_path: Path):
     cutout = Image.new("RGBA", (12, 12), (255, 255, 255, 255))
     path = tmp_path / "mask.png"
@@ -146,3 +160,5 @@ def test_settings_defaults_have_editor_features():
     assert DEFAULTS["subject_scale"] == 1.0
     assert DEFAULTS["outline"] is False
     assert DEFAULTS["preview_mode"] == "result"
+    assert DEFAULTS["spill_cleanup"] is False
+    assert DEFAULTS["spill_strength"] == 55
