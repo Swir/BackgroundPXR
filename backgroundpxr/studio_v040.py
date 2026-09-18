@@ -42,6 +42,8 @@ PRO_TX = {
         "export_mask": "Export Mask PNG",
         "mask_saved": "Mask saved: {name}",
         "need_ai": "Run AI first to create a mask.",
+        "spill_cleanup": "Color Spill Cleanup",
+        "spill_strength": "Spill strength",
     },
     "Polski": {
         "studio_pro": "STUDIO PRO",
@@ -73,6 +75,8 @@ PRO_TX = {
         "export_mask": "Eksportuj maskę PNG",
         "mask_saved": "Zapisano maskę: {name}",
         "need_ai": "Najpierw uruchom AI, aby utworzyć maskę.",
+        "spill_cleanup": "Usuń kolorowe obwódki",
+        "spill_strength": "Siła czyszczenia",
     },
 }
 
@@ -124,6 +128,12 @@ class BackgroundPXRStudio040App(BackgroundPXRStudio034FixedApp):
         )
         self.preview_mode = ctk.StringVar(
             master=root, value=str(cfg.get("preview_mode", "result"))
+        )
+        self.spill_cleanup = ctk.BooleanVar(
+            master=root, value=bool(cfg.get("spill_cleanup", False))
+        )
+        self.spill_strength = ctk.IntVar(
+            master=root, value=int(cfg.get("spill_strength", 55))
         )
         super().__init__(root)
 
@@ -221,6 +231,48 @@ class BackgroundPXRStudio040App(BackgroundPXRStudio034FixedApp):
         page.grid(row=0, column=0, sticky="nsew")
         page.grid_columnconfigure(0, weight=1)
         return page
+
+    def _build_refine_card(self, parent):
+        super()._build_refine_card(parent)
+
+        spill = ctk.CTkFrame(self.refine_card, fg_color="transparent")
+        spill.grid(row=4, column=0, sticky="ew", padx=10, pady=(1, 7))
+        spill.grid_columnconfigure(1, weight=1)
+
+        self.spill_switch = ctk.CTkSwitch(
+            spill,
+            text="",
+            variable=self.spill_cleanup,
+            command=self._studio_recompose,
+            progress_color="#19B7C9",
+            font=ctk.CTkFont("Segoe UI", 9, "bold"),
+            switch_width=32,
+            switch_height=17,
+        )
+        self.spill_switch.grid(row=0, column=0, sticky="w", padx=(0, 8))
+
+        self.spill_strength_slider = ctk.CTkSlider(
+            spill,
+            from_=0,
+            to=100,
+            number_of_steps=100,
+            variable=self.spill_strength,
+            command=lambda _v: self._studio_recompose(),
+            progress_color=self.ACCENT,
+            height=13,
+        )
+        self.spill_strength_slider.grid(row=0, column=1, sticky="ew")
+
+        self.spill_strength_label = ctk.CTkLabel(
+            spill,
+            text="",
+            width=92,
+            height=18,
+            anchor="e",
+            font=ctk.CTkFont("Segoe UI", 9),
+            text_color=self.MUTED,
+        )
+        self.spill_strength_label.grid(row=0, column=2, padx=(8, 0))
 
     def _build_subject_card(self, parent):
         card = self.subject_card = self._card(parent, 1)
@@ -491,6 +543,9 @@ class BackgroundPXRStudio040App(BackgroundPXRStudio034FixedApp):
         )
         self.inspector_tabs.set(self._inspector_label(self.inspector_page.get()))
 
+        self.spill_switch.configure(text=ptx(language, "spill_cleanup"))
+        self.spill_strength_label.configure(text=ptx(language, "spill_strength"))
+
         self.subject_title.configure(text=ptx(language, "subject"))
         self.subject_sub.configure(text=ptx(language, "subject_sub"))
         self.subject_scale_label.configure(text=ptx(language, "scale"))
@@ -596,6 +651,8 @@ class BackgroundPXRStudio040App(BackgroundPXRStudio034FixedApp):
         opts.shadow_blur = float(self.shadow_blur.get())
         opts.shadow_offset_x = int(self.shadow_offset_x.get())
         opts.shadow_offset_y = int(self.shadow_offset_y.get())
+        opts.spill_cleanup = bool(self.spill_cleanup.get())
+        opts.spill_strength = int(self.spill_strength.get())
         return opts
 
     def _save_settings(self):
@@ -616,6 +673,8 @@ class BackgroundPXRStudio040App(BackgroundPXRStudio034FixedApp):
                 "shadow_offset_x": int(self.shadow_offset_x.get()),
                 "shadow_offset_y": int(self.shadow_offset_y.get()),
                 "preview_mode": self.preview_mode.get(),
+                "spill_cleanup": bool(self.spill_cleanup.get()),
+                "spill_strength": int(self.spill_strength.get()),
             }
         )
         self.settings_store.save(data)
