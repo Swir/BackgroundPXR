@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from threading import Lock
 
-from PIL import Image, ImageChops, ImageFilter, ImageOps
+from PIL import Image, ImageChops, ImageFilter, ImageOps, ImageStat
 
 MODEL_MAP = {
     "High Quality v2": "birefnet-general",
@@ -55,6 +55,8 @@ class ProcessOptions:
     shadow_blur: float = 18.0
     shadow_offset_x: int = 12
     shadow_offset_y: int = 18
+    spill_cleanup: bool = False
+    spill_strength: int = 55
 
 
 @dataclass(slots=True)
@@ -139,7 +141,45 @@ class BackgroundEngine:
         alpha = self._refine_alpha(ai_cutout.getchannel("A"), options)
         out = original.convert("RGBA").copy()
         out.putalpha(alpha)
+        if options.spill_cleanup and options.spill_strength > 0:
+            out = self._decontaminate_color_spill(out, options.spill_strength)
         return out
+
+    @staticmethod
+    def _decontaminate_color_spill(cutout: Image.Image, strength: int = 55) -> Image.Image:
+        """Reduce dominant color contamination on semi-transparent mask edges.
+
+        This is intentionally generic: it detects the dominant RGB channel only
+        on the alpha transition band and pulls that channel toward the stronger
+        of the other two channels. It is useful for green/blue screen spill and
+        colored background halos without changing solid interior pixels.
+        """
+        rgba = cutout.convert("RGBA")
+        alpha = rgba.getchannel("A")
+        expanded = alpha.filter(ImageFilter.MaxFilter(5))
+        eroded = alpha.filter(ImageFilter.MinFilter(5))
+        edge = ImageChops.subtract(expanded, eroded)
+        if edge.getbbox() is None:
+            return rgba
+
+        rgb = rgba.convert("RGB")
+        means = ImageStat.Stat(rgb, mask=edge).mean
+        dominant = max(range(3), key=lambda i: means[i])
+        others = [i for i in range(3) if i != dominant]
+        if means[dominant] - max(means[others]) < 6.0:
+            return rgba
+
+        channels = list(rgb.split())
+        target = ImageChops.lighter(channels[others[0]], channels[others[1]])
+        excess = ImageChops.subtract(channels[dominant], target)
+        strength = max(0, min(100, int(strength)))
+        edge_strength = edge.point(lambda p: round(p * strength / 100.0))
+        reduction = ImageChops.multiply(excess, edge_strength)
+        channels[dominant] = ImageChops.subtract(channels[dominant], reduction)
+
+        cleaned = Image.merge("RGB", channels).convert("RGBA")
+        cleaned.putalpha(alpha)
+        return cleaned
 
     @staticmethod
     def _trim(fg: Image.Image, padding: int) -> Image.Image:
