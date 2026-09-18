@@ -7,7 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.studio_v042 import BackgroundPXRStudio042App
+from backgroundpxr.studio_v043 import BackgroundPXRStudio043App
 from backgroundpxr.ui import create_root
 
 
@@ -29,7 +29,7 @@ def _page_fits(page, widgets):
 def main() -> None:
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRStudio042App(root)
+    app = BackgroundPXRStudio043App(root)
 
     try:
         root.state("normal")
@@ -66,6 +66,7 @@ def main() -> None:
     assert all(widget is not None and widget.winfo_exists() for widget in required)
     assert app._diag_percent_var.get() == "0%"
     assert app.diagnostics.path.name == "backgroundpxr.log"
+    assert app._last_brush_point is None
 
     # Left side remains readable on the user's 1600x900 class of display.
     assert app.left_panel.winfo_width() >= 326, (
