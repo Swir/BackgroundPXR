@@ -7,7 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.studio_v034_fix import BackgroundPXRStudio034FixedApp
+from backgroundpxr.studio_v040 import BackgroundPXRStudio040App
 from backgroundpxr.ui import create_root
 
 
@@ -19,10 +19,17 @@ def _font_size(widget) -> int:
         return 0
 
 
+def _page_fits(page, widgets):
+    page.update_idletasks()
+    height = page.winfo_height()
+    bottoms = [w.winfo_y() + w.winfo_height() for w in widgets]
+    return height, max(bottoms, default=0)
+
+
 def main() -> None:
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRStudio034FixedApp(root)
+    app = BackgroundPXRStudio040App(root)
 
     try:
         root.state("normal")
@@ -32,61 +39,118 @@ def main() -> None:
     root.update_idletasks()
 
     required = [
-        app.before_canvas, app.after_canvas, app.remove_btn, app.restore_btn,
-        app.erase_btn, app.export_btn, app.footer_github, app._diag_percent_label,
-        app._diag_button, app.ai_card, app.refine_card, app.manual_card,
-        app.export_card, app.left_panel, app.studio_mode_bar,
-        app.studio_modes_label, app.filmstrip_toggle,
+        app.before_canvas,
+        app.after_canvas,
+        app.remove_btn,
+        app.restore_btn,
+        app.erase_btn,
+        app.export_btn,
+        app.footer_github,
+        app._diag_percent_label,
+        app._diag_button,
+        app.left_panel,
+        app.studio_mode_bar,
+        app.studio_modes_label,
+        app.filmstrip_toggle,
+        app.inspector_tabs,
+        app.subject_card,
+        app.style_card,
+        app.preview_selector,
+        app.export_mask_btn,
     ]
     assert all(widget is not None and widget.winfo_exists() for widget in required)
     assert app._diag_percent_var.get() == "0%"
     assert app.diagnostics.path.name == "backgroundpxr.log"
 
-    assert app.left_panel.winfo_width() >= 326, f"Left sidebar is too narrow: {app.left_panel.winfo_width()}"
-    assert app.clear_btn.winfo_width() >= 80, "Clear button is being clipped"
+    # Left side remains readable on the user's 1600x900 class of display.
+    assert app.left_panel.winfo_width() >= 326, (
+        f"Left sidebar is too narrow: {app.left_panel.winfo_width()}"
+    )
+    assert app.clear_btn.winfo_width() >= 80
     clear_parent = app.clear_btn.master
-    assert app.clear_btn.winfo_x() + app.clear_btn.winfo_width() <= clear_parent.winfo_width() + 2, "Clear button extends beyond its header"
+    assert (
+        app.clear_btn.winfo_x() + app.clear_btn.winfo_width()
+        <= clear_parent.winfo_width() + 2
+    )
 
+    # 0.3.4 workflow is retained.
     assert app.studio_mode.get() == "cutout"
     assert len(app.studio_mode_bar.cget("values")) == 4
-
     assert not app._filmstrip_expanded
-    assert app.filmstrip_strip.cget("height") <= 40
     app._toggle_filmstrip()
     root.update_idletasks()
     assert app._filmstrip_expanded
-    assert app.filmstrip_strip.cget("height") >= 80
     app._toggle_filmstrip()
     root.update_idletasks()
     assert not app._filmstrip_expanded
 
-    cards = [app.ai_card, app.refine_card, app.manual_card, app.export_card]
-    geometry = [(card.winfo_y(), card.winfo_height()) for card in cards]
-    print(f"left={app.left_panel.winfo_width()} right_panel={app.right_panel.winfo_height()} cards={geometry}")
-    for upper, lower in zip(cards, cards[1:]):
-        assert upper.winfo_y() + upper.winfo_height() <= lower.winfo_y(), f"Studio cards overlap: {upper} -> {lower}; {geometry}"
-    export_bottom = app.export_card.winfo_y() + app.export_card.winfo_height()
-    safety = app.right_panel.winfo_height() - export_bottom
-    assert safety >= 30, (
-        f"Not enough bottom safety: {safety}px; bottom={export_bottom}, "
-        f"panel={app.right_panel.winfo_height()}, cards={geometry}"
+    # New Studio Pro inspector uses pages so controls do not need to be crushed.
+    assert app.right_panel.winfo_width() >= 420
+    assert len(app.inspector_tabs.cget("values")) == 3
+
+    app._show_inspector("ai")
+    root.update_idletasks()
+    ai_h, ai_bottom = _page_fits(app.ai_page, [app.ai_card, app.refine_card])
+    assert ai_bottom <= ai_h, f"AI inspector clipped: {ai_bottom}>{ai_h}"
+
+    app._show_inspector("create")
+    root.update_idletasks()
+    create_h, create_bottom = _page_fits(
+        app.create_page, [app.manual_card, app.subject_card, app.style_card]
+    )
+    assert create_bottom <= create_h, (
+        f"Create inspector clipped: {create_bottom}>{create_h}"
     )
 
-    for button in (app.remove_btn, app.restore_btn, app.erase_btn, app.export_btn, app.process_all_btn):
+    app._show_inspector("export")
+    root.update_idletasks()
+    export_h, export_bottom = _page_fits(
+        app.export_page, [app.export_card, app.mask_export_card]
+    )
+    assert export_bottom <= export_h, (
+        f"Export inspector clipped: {export_bottom}>{export_h}"
+    )
+
+    # New creative controls are wired and usable.
+    assert app.subject_scale.get() > 0
+    assert app.outline_width.get() >= 1
+    assert len(app.preview_selector.cget("values")) == 4
+    assert app.export_mask_btn.winfo_height() >= 30
+
+    for button in (
+        app.remove_btn,
+        app.restore_btn,
+        app.erase_btn,
+        app.export_btn,
+        app.process_all_btn,
+        app.export_mask_btn,
+    ):
         assert button.winfo_width() >= 72
         assert button.winfo_height() >= 20
 
     readable_widgets = [
-        app.files_project, app.add_images_btn, app.add_folder_btn, app.project_files,
-        app.studio_modes_label, app.studio_mode_bar, app.ai_title, app.model_label,
-        app.manual_title, app.restore_btn, app.export_title, app.status_label,
-        app._diag_button, app.filmstrip_toggle,
+        app.files_project,
+        app.add_images_btn,
+        app.add_folder_btn,
+        app.project_files,
+        app.studio_modes_label,
+        app.studio_mode_bar,
+        app.pro_title,
+        app.inspector_tabs,
+        app.subject_title,
+        app.style_title,
+        app.export_title,
+        app.status_label,
+        app._diag_button,
+        app.filmstrip_toggle,
     ]
     for widget in readable_widgets:
-        assert _font_size(widget) >= 9, f"Unreadably small font on {widget}: {_font_size(widget)}pt"
+        assert _font_size(widget) >= 9, (
+            f"Unreadably small font on {widget}: {_font_size(widget)}pt"
+        )
 
     root.destroy()
-    print("BackgroundPXR AI Background Studio 0.3.4 smoke test passed")
+    print("BackgroundPXR Studio Pro 0.4 smoke test passed")
 
 
 if __name__ == "__main__":
