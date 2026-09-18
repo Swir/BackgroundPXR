@@ -56,6 +56,8 @@ def main() -> None:
         app.subject_card,
         app.style_card,
         app.preview_selector,
+        app.spill_switch,
+        app.spill_strength_slider,
         app.export_mask_btn,
     ]
     assert all(widget is not None and widget.winfo_exists() for widget in required)
@@ -115,6 +117,7 @@ def main() -> None:
     assert app.subject_scale.get() > 0
     assert app.outline_width.get() >= 1
     assert len(app.preview_selector.cget("values")) == 4
+    assert 0 <= app.spill_strength.get() <= 100
     assert app.export_mask_btn.winfo_height() >= 30
 
     for button in (
@@ -139,6 +142,8 @@ def main() -> None:
         app.inspector_tabs,
         app.subject_title,
         app.style_title,
+        app.spill_switch,
+        app.spill_strength_label,
         app.export_title,
         app.status_label,
         app._diag_button,
