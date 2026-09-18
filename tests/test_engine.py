@@ -88,7 +88,6 @@ def test_mask_image_uses_cutout_alpha():
     assert mask.getbbox() == (5, 5, 15, 15)
 
 
-
 def test_color_spill_cleanup_reduces_dominant_green_edge():
     cutout = Image.new("RGBA", (40, 40), (40, 220, 50, 0))
     alpha = Image.new("L", (40, 40), 0)
@@ -98,8 +97,30 @@ def test_color_spill_cleanup_reduces_dominant_green_edge():
     cleaned = BackgroundEngine._decontaminate_color_spill(cutout, 100)
     before_g = cutout.convert("RGB").getchannel("G").getpixel((10, 10))
     after_g = cleaned.convert("RGB").getchannel("G").getpixel((10, 10))
-    assert after_g <= before_g
+    center_g = cleaned.convert("RGB").getchannel("G").getpixel((20, 20))
+    assert after_g < before_g
+    assert center_g == before_g
     assert cleaned.getchannel("A").tobytes() == alpha.tobytes()
+
+
+def test_color_spill_cleanup_strength_zero_is_noop():
+    cutout = Image.new("RGBA", (32, 32), (30, 210, 45, 0))
+    alpha = Image.new("L", (32, 32), 0)
+    alpha.paste(255, (8, 8, 24, 24))
+    cutout.putalpha(alpha)
+
+    cleaned = BackgroundEngine._decontaminate_color_spill(cutout, 0)
+    assert cleaned.tobytes() == cutout.tobytes()
+
+
+def test_color_spill_cleanup_keeps_neutral_edge_unchanged():
+    cutout = Image.new("RGBA", (32, 32), (120, 120, 120, 0))
+    alpha = Image.new("L", (32, 32), 0)
+    alpha.paste(255, (8, 8, 24, 24))
+    cutout.putalpha(alpha)
+
+    cleaned = BackgroundEngine._decontaminate_color_spill(cutout, 100)
+    assert cleaned.tobytes() == cutout.tobytes()
 
 
 def test_save_mask(tmp_path: Path):

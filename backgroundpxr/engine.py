@@ -155,6 +155,10 @@ class BackgroundEngine:
         colored background halos without changing solid interior pixels.
         """
         rgba = cutout.convert("RGBA")
+        strength = max(0, min(100, int(strength)))
+        if strength == 0:
+            return rgba
+
         alpha = rgba.getchannel("A")
         expanded = alpha.filter(ImageFilter.MaxFilter(5))
         eroded = alpha.filter(ImageFilter.MinFilter(5))
@@ -166,13 +170,12 @@ class BackgroundEngine:
         means = ImageStat.Stat(rgb, mask=edge).mean
         dominant = max(range(3), key=lambda i: means[i])
         others = [i for i in range(3) if i != dominant]
-        if means[dominant] - max(means[others]) < 6.0:
+        if means[dominant] - max(means[i] for i in others) < 6.0:
             return rgba
 
         channels = list(rgb.split())
         target = ImageChops.lighter(channels[others[0]], channels[others[1]])
         excess = ImageChops.subtract(channels[dominant], target)
-        strength = max(0, min(100, int(strength)))
         edge_strength = edge.point(lambda p: round(p * strength / 100.0))
         reduction = ImageChops.multiply(excess, edge_strength)
         channels[dominant] = ImageChops.subtract(channels[dominant], reduction)
