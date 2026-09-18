@@ -7,7 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.studio_v041 import BackgroundPXRStudio041App
+from backgroundpxr.studio_v042 import BackgroundPXRStudio042App
 from backgroundpxr.ui import create_root
 
 
@@ -29,7 +29,7 @@ def _page_fits(page, widgets):
 def main() -> None:
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRStudio041App(root)
+    app = BackgroundPXRStudio042App(root)
 
     try:
         root.state("normal")
@@ -58,6 +58,9 @@ def main() -> None:
         app.preview_selector,
         app.spill_switch,
         app.spill_strength_slider,
+        app.wipe_frame,
+        app.wipe_slider,
+        app.wipe_value_label,
         app.export_mask_btn,
     ]
     assert all(widget is not None and widget.winfo_exists() for widget in required)
@@ -116,10 +119,30 @@ def main() -> None:
     # Creative controls are wired and usable.
     assert app.subject_scale.get() > 0
     assert app.outline_width.get() >= 1
-    assert len(app.preview_selector.cget("values")) == 5
+    assert len(app.preview_selector.cget("values")) == 6
     assert app._preview_label("edge") in app.preview_selector.cget("values")
+    assert app._preview_label("compare") in app.preview_selector.cget("values")
     assert 0 <= app.spill_strength.get() <= 100
+    assert 0 <= app.wipe_position.get() <= 100
     assert app.export_mask_btn.winfo_height() >= 30
+
+    # Compare mode swaps presets for the wipe control without growing the card.
+    app._show_inspector("create")
+    app._on_preview_mode(app._preview_label("compare"))
+    root.update_idletasks()
+    assert app.preview_mode.get() == "compare"
+    assert app.wipe_frame.winfo_ismapped()
+    assert not app.style_presets.winfo_ismapped()
+    compare_h, compare_bottom = _page_fits(
+        app.create_page, [app.manual_card, app.subject_card, app.style_card]
+    )
+    assert compare_bottom <= compare_h, (
+        f"Compare inspector clipped: {compare_bottom}>{compare_h}"
+    )
+    app._on_preview_mode(app._preview_label("result"))
+    root.update_idletasks()
+    assert not app.wipe_frame.winfo_ismapped()
+    assert app.style_presets.winfo_ismapped()
 
     for button in (
         app.remove_btn,
@@ -145,6 +168,8 @@ def main() -> None:
         app.style_title,
         app.spill_switch,
         app.spill_strength_label,
+        app.wipe_label,
+        app.wipe_value_label,
         app.export_title,
         app.status_label,
         app._diag_button,

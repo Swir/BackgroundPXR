@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PIL import Image, ImageChops, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps
 
 
 def edge_inspection_image(cutout: Image.Image, edge_width: int = 2) -> Image.Image:
@@ -40,5 +40,46 @@ def edge_inspection_image(cutout: Image.Image, edge_width: int = 2) -> Image.Ima
         fringe_overlay = Image.new("RGBA", rgba.size, (255, 190, 52, 255))
         fringe_overlay.putalpha(fringe.point(lambda p: min(180, p)))
         preview.alpha_composite(fringe_overlay)
+
+    return preview
+
+
+def wipe_compare_image(
+    before: Image.Image,
+    after: Image.Image,
+    position: float = 50.0,
+    divider_width: int = 2,
+) -> Image.Image:
+    """Create a non-destructive before/after wipe comparison image.
+
+    ``position`` is the percentage of the canvas occupied by the original image
+    from the left. The processed result is shown on the right. When the source
+    and result use different canvas sizes, the original is padded (never
+    stretched) to the processed result size so the comparison stays predictable.
+    """
+    result = after.convert("RGBA")
+    original = before.convert("RGBA")
+    if original.size != result.size:
+        original = ImageOps.pad(
+            original,
+            result.size,
+            method=Image.Resampling.LANCZOS,
+            color=(9, 24, 39, 255),
+            centering=(0.5, 0.5),
+        )
+
+    pct = max(0.0, min(100.0, float(position)))
+    split = int(round(result.width * pct / 100.0))
+    preview = result.copy()
+    if split > 0:
+        preview.paste(original.crop((0, 0, split, result.height)), (0, 0))
+
+    if 0 < split < result.width:
+        half = max(1, int(divider_width)) // 2
+        left = max(0, split - half)
+        right = min(result.width - 1, split + max(1, int(divider_width)) - half - 1)
+        ImageDraw.Draw(preview).rectangle(
+            (left, 0, right, result.height - 1), fill=(53, 207, 255, 255)
+        )
 
     return preview
