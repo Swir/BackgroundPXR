@@ -186,6 +186,15 @@ class BackgroundEngine:
         if fw <= 0 or fh <= 0:
             return Image.new("RGBA", target, (0, 0, 0, 0))
 
+        # Preserve the exact 0.3.x behaviour for an untouched Original canvas.
+        if (
+            fg.size == target
+            and abs(float(scale) - 1.0) < 1e-9
+            and abs(float(offset_x)) < 1e-9
+            and abs(float(offset_y)) < 1e-9
+        ):
+            return fg.copy()
+
         scale = max(0.20, min(1.80, float(scale)))
         fit = min(tw / fw, th / fh) * 0.92 * scale
         nw = max(1, round(fw * fit))
