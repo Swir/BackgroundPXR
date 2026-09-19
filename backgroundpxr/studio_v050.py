@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import threading
+import time
 import traceback
 from tkinter import messagebox
 
+from PIL import Image, ImageOps
+
 from .display import effective_ui_screen
+from .engine import ProcessResult
 from .exporting import AtomicBackgroundEngine, reserve_output_path
 from .i18n import tr
 from .studio_v040 import ptx
@@ -63,32 +68,105 @@ class BackgroundPXRStudio050App(BackgroundPXRStudio049App):
             self._apply_compact_inspector_layout()
 
     def _worker(self, items, opts, save):
-        """Process a batch without allowing same-stem inputs to overwrite."""
+        """Process collision-safe batches without losing diagnostic telemetry."""
         ok = fail = 0
         total = len(items)
         reserved_outputs: set[str] = set()
         for pos, (idx, path) in enumerate(items, 1):
             if self.cancel_event.is_set():
                 break
-            self.events.put(("status", pos, total, path.name))
+
+            name = path.name
+            self._emit(pos, total, name, 0.03, "open_img")
+            self.diagnostics.write("INFO", "open", "Opening source image", str(path))
             try:
-                res = self.engine.process_layers(path, opts)
-                dest = None
+                with Image.open(path) as source:
+                    original = ImageOps.exif_transpose(source).convert("RGBA")
+
+                self._emit(pos, total, name, 0.16, "ai")
+                self.diagnostics.write(
+                    "INFO",
+                    "ai",
+                    (
+                        "AI removal started | "
+                        f"model={opts.model_label} | alpha_matting={opts.alpha_matting}"
+                    ),
+                    str(path),
+                )
+
+                stop = threading.Event()
+                started = time.monotonic()
+
+                def heartbeat():
+                    while not stop.wait(1.0):
+                        stage = "cancel_wait" if self.cancel_event.is_set() else "ai"
+                        self._emit(
+                            pos,
+                            total,
+                            name,
+                            0.16,
+                            stage,
+                            int(time.monotonic() - started),
+                        )
+
+                threading.Thread(target=heartbeat, daemon=True).start()
+                try:
+                    ai = self.engine.remove_background(original, opts)
+                finally:
+                    stop.set()
+
+                if self.cancel_event.is_set():
+                    break
+
+                self._emit(pos, total, name, 0.74, "refine")
+                cutout = self.engine.refine_cutout(original, ai, opts)
+                self._emit(pos, total, name, 0.84, "compose")
+                output = self.engine.compose(original, cutout, opts)
+                result = ProcessResult(original, cutout, output)
+                destination = None
+
                 if save:
-                    dest = reserve_output_path(
+                    self._emit(pos, total, name, 0.92, "save")
+                    destination = reserve_output_path(
                         path,
                         self.output_dir.get(),
                         opts.export_format,
                         opts.output_suffix,
                         reserved_outputs,
                     )
-                    self.engine.save(res.output, dest, opts.export_format)
-                    ok += 1
-                self.events.put(("result", idx, res, str(dest) if dest else None))
+                    self.engine.save(output, destination, opts.export_format)
+
+                ok += 1
+                self.diagnostics.write(
+                    "INFO",
+                    "complete",
+                    (
+                        "Item completed | "
+                        f"output={destination if destination else 'preview only'}"
+                    ),
+                    str(path),
+                )
+                self.events.put(
+                    ("result", idx, result, str(destination) if destination else None)
+                )
+                self._emit(pos, total, name, 1.0, "done")
             except Exception as exc:
                 fail += 1
-                self.events.put(("error", path.name, str(exc)))
-            self.events.put(("progress", pos / total))
+                trace = traceback.format_exc()
+                error_id = self.diagnostics.exception("processing", path, exc, trace)
+                self.events.put(
+                    (
+                        "diag_error",
+                        pos,
+                        total,
+                        name,
+                        error_id,
+                        type(exc).__name__,
+                        str(exc),
+                    )
+                )
+                self.events.put(("progress", pos / total if total else 0.0))
+
         self.events.put(("done", ok, fail, self.cancel_event.is_set(), save))
 
     def _show_export_failure(self, stage, source, exc, trace, message_key="export_failed"):
