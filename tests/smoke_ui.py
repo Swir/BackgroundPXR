@@ -10,8 +10,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.display import plan_window
-from backgroundpxr.studio_v047 import BackgroundPXRStudio047App
+from backgroundpxr.display import enable_windows_dpi_awareness, plan_window
+from backgroundpxr.studio_v048 import BackgroundPXRStudio048App
 from backgroundpxr.ui import create_root
 
 
@@ -72,28 +72,34 @@ def main() -> None:
     target_width, target_height = _smoke_size()
     placement = plan_window(target_width, target_height)
 
+    # Match the production entry point: DPI mode is selected before Tk creates
+    # its first native window. CI provisions the requested physical desktop.
+    dpi_status = enable_windows_dpi_awareness()
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRStudio047App(root)
+    app = BackgroundPXRStudio048App(root)
 
-    # The production shell asks Windows to maximize on desktop startup. For
-    # deterministic acceptance testing, make the hidden test window visible
-    # first and explicitly return it to normal state before applying geometry.
+    actual_screen = (root.winfo_screenwidth(), root.winfo_screenheight())
+    assert actual_screen == (target_width, target_height), (
+        f"Acceptance desktop mismatch: {actual_screen} != "
+        f"{(target_width, target_height)}"
+    )
+
+    configured_min = tuple(int(value) for value in root.minsize())
+    assert configured_min == (placement.min_width, placement.min_height), (
+        f"Studio minimum does not follow desktop policy: {configured_min} != "
+        f"{(placement.min_width, placement.min_height)}"
+    )
+
+    # Test the restored Studio geometry rather than the maximized state used on
+    # Windows. This catches clipping at the actual startup fallback dimensions.
     root.deiconify()
     try:
         root.state("normal")
     except Exception:
         pass
     root.update()
-
-    # CI normally runs on one fixed Windows desktop. Reapply the minimum that
-    # BackgroundPXR would choose for the requested logical desktop so the same
-    # process can exercise 100%, 125% and 150% scaling-class window sizes.
-    root.minsize(placement.min_width, placement.min_height)
-    root.geometry(f"{target_width}x{target_height}+0+0")
-    # Windows applies top-level geometry asynchronously. A full update is
-    # required here; update_idletasks() alone can leave the previous minimum
-    # size visible to winfo_width()/winfo_height() on hosted runners.
+    root.geometry(placement.geometry)
     root.update_idletasks()
     root.update()
     root.update_idletasks()
@@ -102,16 +108,17 @@ def main() -> None:
     actual_height = root.winfo_height()
     print(
         "BackgroundPXR viewport probe: "
-        f"requested={target_width}x{target_height} "
+        f"desktop={target_width}x{target_height} "
+        f"planned={placement.width}x{placement.height} "
         f"actual={actual_width}x{actual_height} "
-        f"screen={root.winfo_screenwidth()}x{root.winfo_screenheight()} "
-        f"state={root.state()}"
+        f"min={configured_min[0]}x{configured_min[1]} "
+        f"dpi={dpi_status} state={root.state()}"
     )
-    assert abs(actual_width - target_width) <= 2, (
-        f"Unexpected test width: {actual_width} != {target_width}"
+    assert abs(actual_width - placement.width) <= 2, (
+        f"Unexpected test width: {actual_width} != {placement.width}"
     )
-    assert abs(actual_height - target_height) <= 2, (
-        f"Unexpected test height: {actual_height} != {target_height}"
+    assert abs(actual_height - placement.height) <= 2, (
+        f"Unexpected test height: {actual_height} != {placement.height}"
     )
 
     required = [
@@ -323,8 +330,8 @@ def main() -> None:
     root.destroy()
     print(
         "BackgroundPXR Studio Pro smoke test passed "
-        f"at {target_width}x{target_height} "
-        f"(startup minimum {placement.min_width}x{placement.min_height})"
+        f"on {target_width}x{target_height} desktop with "
+        f"{placement.width}x{placement.height} restored window"
     )
 
 
