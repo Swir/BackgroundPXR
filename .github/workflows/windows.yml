@@ -52,6 +52,19 @@ jobs:
           }
       - name: GUI acceptance 1600x900
         run: python tests/smoke_ui.py
+      - name: GUI Windows scaling policy 125% and 150%
+        shell: pwsh
+        run: |
+          # Keep the physical 1600x900 acceptance desktop and vary Tk's
+          # points-per-pixel ratio. This verifies that responsive Studio choices
+          # use effective Windows UI height rather than raw physical pixels.
+          foreach ($scale in @('1.25', '1.50')) {
+            Write-Host "--- BackgroundPXR Windows UI scale acceptance: ${scale}x ---"
+            $env:PXR_SMOKE_SIZE = '1600x900'
+            $env:PXR_SMOKE_UI_SCALE = $scale
+            python tests/smoke_ui.py
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
       - name: GUI resize and HiDPI acceptance matrix
         shell: pwsh
         run: |
@@ -77,6 +90,7 @@ jobs:
             '1152x864'
           )
           $tested = 0
+          $env:PXR_SMOKE_UI_SCALE = '1.0'
           foreach ($size in $sizes) {
             Write-Host "--- BackgroundPXR UI acceptance candidate: $size ---"
             $parts = $size -split 'x'

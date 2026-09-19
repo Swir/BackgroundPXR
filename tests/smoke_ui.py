@@ -10,8 +10,14 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.display import enable_windows_dpi_awareness, plan_window
-from backgroundpxr.studio_v049 import BackgroundPXRStudio049App
+from backgroundpxr.display import (
+    WINDOWS_TK_BASE_SCALING,
+    effective_ui_screen,
+    enable_windows_dpi_awareness,
+    plan_window,
+)
+from backgroundpxr.editor import MaskEditor
+from backgroundpxr.studio_v050 import BackgroundPXRStudio050App
 from backgroundpxr.ui import create_root
 
 
@@ -47,6 +53,21 @@ def _smoke_size() -> tuple[int, int]:
     return width, height
 
 
+def _smoke_ui_scale() -> float:
+    value = os.environ.get("PXR_SMOKE_UI_SCALE", "1.0").strip()
+    try:
+        scale = float(value)
+    except ValueError as exc:
+        raise ValueError(
+            f"Invalid PXR_SMOKE_UI_SCALE={value!r}; expected a decimal scale"
+        ) from exc
+    if not 1.0 <= scale <= 2.0:
+        raise ValueError(
+            f"PXR_SMOKE_UI_SCALE={value!r} is outside the 1.0-2.0 acceptance range"
+        )
+    return scale
+
+
 def _assert_inside_root(root, widget, *, label: str) -> None:
     root.update_idletasks()
     root_x = root.winfo_rootx()
@@ -68,16 +89,85 @@ def _assert_inside_root(root, widget, *, label: str) -> None:
     )
 
 
+def _manual_workflow_acceptance(app, root) -> None:
+    """Exercise a real erase/undo/redo/overlay pass without invoking the AI model."""
+    original = Image.new("RGBA", (96, 96), (90, 150, 210, 255))
+    app.editor = MaskEditor(original, original.copy())
+    app.preview_after = app.editor.current_cutout()
+    app.background_mode.set("transparent")
+    app.shadow.set(False)
+    app.trim.set(False)
+    app.canvas_preset.set("Original")
+    app.brush_size.set(20)
+    app.brush_hardness.set(100)
+    app.mask_overlay.set(False)
+    app._set_tool("erase")
+    root.update_idletasks()
+    app._refresh_after_only()
+    root.update_idletasks()
+
+    assert app._after_transform is not None
+    offset_x, offset_y, scale = app._after_transform
+    assert scale > 0
+
+    def event(image_x: float, image_y: float):
+        return type(
+            "PointerEvent",
+            (),
+            {
+                "x": round(offset_x + image_x * scale),
+                "y": round(offset_y + image_y * scale),
+            },
+        )()
+
+    assert app.editor.alpha.getpixel((48, 48)) == 255
+    app._on_after_press(event(28, 48))
+    app._on_after_drag(event(68, 48))
+    app._on_after_release(event(68, 48))
+    root.update_idletasks()
+
+    erased_alpha = app.editor.alpha.getpixel((48, 48))
+    assert erased_alpha < 32, f"Manual erase did not affect the stroke center: {erased_alpha}"
+    assert app.editor.can_undo
+    assert app.undo_mask_btn.cget("state") == "normal"
+    assert app.redo_mask_btn.cget("state") == "disabled"
+    assert app._live_recompose_after_id is None
+
+    assert app._undo()
+    assert app.editor.alpha.getpixel((48, 48)) == 255
+    assert app.redo_mask_btn.cget("state") == "normal"
+
+    assert app._redo()
+    assert app.editor.alpha.getpixel((48, 48)) < 32
+    assert app.preview_after is not None
+
+    app.mask_overlay.set(True)
+    app._on_mask_overlay_change()
+    overlay = app._after_image()
+    assert overlay is not None and overlay.size == original.size
+    assert bool(app.mask_overlay.get())
+
+
 def main() -> None:
     target_width, target_height = _smoke_size()
+    target_ui_scale = _smoke_ui_scale()
     placement = plan_window(target_width, target_height)
 
     # Match the production entry point: DPI mode is selected before Tk creates
     # its first native window. CI provisions the requested physical desktop.
     dpi_status = enable_windows_dpi_awareness()
     root = create_root()
+    if sys.platform == "win32":
+        # Override Tk's points-per-pixel ratio so the same physical CI desktop
+        # can validate the responsive decisions used at 125% and 150% Windows
+        # scaling without changing the production DPI-awareness path.
+        root.tk.call(
+            "tk",
+            "scaling",
+            WINDOWS_TK_BASE_SCALING * target_ui_scale,
+        )
     root.withdraw()
-    app = BackgroundPXRStudio049App(root)
+    app = BackgroundPXRStudio050App(root)
 
     actual_screen = (root.winfo_screenwidth(), root.winfo_screenheight())
     assert actual_screen == (target_width, target_height), (
@@ -85,14 +175,20 @@ def main() -> None:
         f"{(target_width, target_height)}"
     )
 
+    effective_width, effective_height, detected_ui_scale = effective_ui_screen(root)
+    if sys.platform == "win32":
+        assert abs(detected_ui_scale - target_ui_scale) <= 0.03, (
+            f"UI scale mismatch: {detected_ui_scale:.3f} != {target_ui_scale:.3f}"
+        )
+
     configured_min = tuple(int(value) for value in root.minsize())
     assert configured_min == (placement.min_width, placement.min_height), (
         f"Studio minimum does not follow desktop policy: {configured_min} != "
         f"{(placement.min_width, placement.min_height)}"
     )
     assert app._compact_inspector == (
-        target_height <= app.COMPACT_SCREEN_HEIGHT
-    ), "Responsive inspector mode does not match desktop height"
+        effective_height <= app.COMPACT_SCREEN_HEIGHT
+    ), "Responsive inspector mode does not match scale-normalized desktop height"
 
     # Test the restored Studio geometry rather than the maximized state used on
     # Windows. This catches clipping at the actual startup fallback dimensions.
@@ -112,6 +208,8 @@ def main() -> None:
     print(
         "BackgroundPXR viewport probe: "
         f"desktop={target_width}x{target_height} "
+        f"effective={effective_width}x{effective_height} "
+        f"ui_scale={detected_ui_scale:.2f} "
         f"planned={placement.width}x{placement.height} "
         f"actual={actual_width}x{actual_height} "
         f"min={configured_min[0]}x{configured_min[1]} "
@@ -221,7 +319,7 @@ def main() -> None:
     if app._compact_inspector:
         for subtitle in (app.manual_sub, app.subject_sub, app.style_sub):
             assert not subtitle.winfo_ismapped(), (
-                "Secondary inspector copy should collapse on short desktops"
+                "Secondary inspector copy should collapse on short/scaled desktops"
             )
     _assert_inside_root(root, app.restore_btn, label="restore button")
     _assert_inside_root(root, app.erase_btn, label="erase button")
@@ -294,6 +392,9 @@ def main() -> None:
     app._toggle_mask_overlay()
     assert bool(app.mask_overlay.get())
 
+    # Exercise the full manual gesture/history path on every accepted viewport.
+    _manual_workflow_acceptance(app, root)
+
     for button in (
         app.remove_btn,
         app.restore_btn,
@@ -338,8 +439,8 @@ def main() -> None:
     root.destroy()
     print(
         "BackgroundPXR Studio Pro smoke test passed "
-        f"on {target_width}x{target_height} desktop with "
-        f"{placement.width}x{placement.height} restored window"
+        f"on {target_width}x{target_height} desktop at {detected_ui_scale:.2f}x UI scale "
+        f"with {placement.width}x{placement.height} restored window"
     )
 
 

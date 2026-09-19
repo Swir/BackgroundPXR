@@ -1,8 +1,11 @@
 from types import SimpleNamespace
 
 from backgroundpxr.display import (
+    WINDOWS_TK_BASE_SCALING,
+    effective_ui_screen,
     enable_windows_dpi_awareness,
     plan_window,
+    windows_ui_scale,
 )
 
 
@@ -84,6 +87,51 @@ def test_windows_falls_back_to_shcore_when_v2_is_unavailable():
         == "per-monitor"
     )
     assert calls == [("shcore", 2)]
+
+
+def test_windows_ui_scale_converts_tk_dpi_to_display_scale():
+    class TkProbe:
+        def __init__(self, scaling):
+            self.scaling = scaling
+
+        def call(self, *args):
+            assert args == ("tk", "scaling")
+            return self.scaling
+
+    root = SimpleNamespace(tk=TkProbe(WINDOWS_TK_BASE_SCALING * 1.5))
+
+    assert windows_ui_scale(root, _platform="win32") == 1.5
+    assert windows_ui_scale(root, _platform="linux") == 1.0
+
+
+def test_effective_ui_screen_normalizes_125_percent_windows_scaling():
+    class TkProbe:
+        def call(self, *args):
+            assert args == ("tk", "scaling")
+            return WINDOWS_TK_BASE_SCALING * 1.25
+
+    root = SimpleNamespace(
+        tk=TkProbe(),
+        winfo_screenwidth=lambda: 1600,
+        winfo_screenheight=lambda: 900,
+    )
+
+    assert effective_ui_screen(root, _platform="win32") == (1280, 720, 1.25)
+
+
+def test_invalid_tk_scaling_falls_back_without_breaking_layout():
+    class TkProbe:
+        def call(self, *args):
+            raise RuntimeError("Tk not ready")
+
+    root = SimpleNamespace(
+        tk=TkProbe(),
+        winfo_screenwidth=lambda: 1600,
+        winfo_screenheight=lambda: 900,
+    )
+
+    assert windows_ui_scale(root, _platform="win32") == 1.0
+    assert effective_ui_screen(root, _platform="win32") == (1600, 900, 1.0)
 
 
 def test_app_enables_dpi_awareness_before_creating_tk_root():
