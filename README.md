@@ -30,13 +30,13 @@
 | Platform | Windows 10 / 11 |
 | Processing | Local after the required AI model is available |
 | Latest public release | [v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0) |
-| 1.0 acceptance progress | **70.0% — 7/10 verified items** |
+| 1.0 acceptance progress | **80.0% — 8/10 verified items** |
 
 <p align="center">
-  <img width="100%" src="assets/readme/progress-card.svg" alt="BackgroundPXR 1.0 acceptance progress — 70.0 percent" />
+  <img width="100%" src="assets/readme/progress-card.svg" alt="BackgroundPXR 1.0 acceptance progress — 80.0 percent" />
 </p>
 
-**1.0 acceptance progress: 70.0% (7/10).** The finite denominator is defined in [`ROADMAP_1_0.md`](ROADMAP_1_0.md). Release readiness remains separate and is currently **BLOCKED**.
+**1.0 acceptance progress: 80.0% (8/10).** The finite denominator is defined in [`ROADMAP_1_0.md`](ROADMAP_1_0.md). Release readiness remains separate and is currently **BLOCKED**.
 
 **Qualification candidate:** development builds on this branch identify as **1.0.0rc1** so the exact portable package can be qualified before the final 1.0 promotion. It is not a GitHub Release; **v0.4.0 remains the latest public release** until the remaining quality gates pass.
 
@@ -182,7 +182,7 @@ The initial AI-model download is separate from photo processing; an Internet con
 
 The canonical finite 1.0 acceptance scope is maintained in [`ROADMAP_1_0.md`](ROADMAP_1_0.md).
 
-**Current verified progress: 7 / 10 = 70.0%.** The percentage measures acceptance work toward 1.0; it is not an AI cutout-accuracy score and does not by itself mean the Release gate has passed.
+**Current verified progress: 8 / 10 = 80.0%.** The percentage measures acceptance work toward 1.0; it is not an AI cutout-accuracy score and does not by itself mean the Release gate has passed.
 
 `tools/readme_progress.py` derives the card and roadmap mini directly from that checklist:
 
