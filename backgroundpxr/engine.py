@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Lock
@@ -23,6 +24,7 @@ CANVAS_PRESETS = {
     "Product 2000": (2000, 2000), "Produkt 2000": (2000, 2000),
     "Product 2000×2000": (2000, 2000), "Produkt 2000×2000": (2000, 2000),
 }
+BACKGROUND_CACHE_LIMIT = 4
 
 
 @dataclass(slots=True)
@@ -70,6 +72,8 @@ class BackgroundEngine:
     def __init__(self) -> None:
         self._sessions: dict[str, object] = {}
         self._lock = Lock()
+        self._background_cache_lock = Lock()
+        self._background_cache: OrderedDict[tuple[object, ...], Image.Image] = OrderedDict()
 
     @staticmethod
     def _runtime_import_error(exc: BaseException) -> RuntimeError:
@@ -288,8 +292,62 @@ class BackgroundEngine:
         mask = cutout.convert("RGBA").getchannel("A")
         return ImageOps.invert(mask) if invert else mask
 
+    def clear_background_cache(self) -> None:
+        """Drop prepared replacement/blur backgrounds held for Studio preview."""
+        with self._background_cache_lock:
+            self._background_cache.clear()
+
+    def _background_cache_key(
+        self,
+        size: tuple[int, int],
+        options: ProcessOptions,
+        original: Image.Image,
+    ) -> tuple[object, ...] | None:
+        mode = options.background_mode
+        if mode == "image":
+            if not options.background_image:
+                return None
+            path = Path(options.background_image).expanduser()
+            try:
+                stat = path.stat()
+                stamp = (stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size)
+            except OSError:
+                stamp = (None, None, None)
+            return ("image", size, str(path.absolute()), *stamp)
+        if mode == "blur":
+            blur = max(1.0, min(80.0, float(options.background_blur)))
+            # The editor keeps original immutable for the lifetime of a project.
+            # Object identity therefore avoids hashing multi-megapixel images on
+            # every slider frame while remaining source-specific.
+            return (
+                "blur",
+                size,
+                id(original),
+                original.size,
+                original.mode,
+                round(blur, 3),
+            )
+        return None
+
+    def _cached_background(self, key: tuple[object, ...]) -> Image.Image | None:
+        with self._background_cache_lock:
+            cached = self._background_cache.pop(key, None)
+            if cached is None:
+                return None
+            self._background_cache[key] = cached
+            return cached.copy()
+
+    def _store_background(
+        self, key: tuple[object, ...], background: Image.Image
+    ) -> None:
+        with self._background_cache_lock:
+            self._background_cache.pop(key, None)
+            self._background_cache[key] = background.copy()
+            while len(self._background_cache) > BACKGROUND_CACHE_LIMIT:
+                self._background_cache.popitem(last=False)
+
     @staticmethod
-    def _make_background(
+    def _render_background(
         size: tuple[int, int], options: ProcessOptions, original: Image.Image
     ) -> Image.Image:
         if options.background_mode == "white":
@@ -308,6 +366,21 @@ class BackgroundEngine:
                 ImageFilter.GaussianBlur(max(1, min(80, float(options.background_blur))))
             )
         return Image.new("RGBA", size, (0, 0, 0, 0))
+
+    def _make_background(
+        self, size: tuple[int, int], options: ProcessOptions, original: Image.Image
+    ) -> Image.Image:
+        key = self._background_cache_key(size, options, original)
+        if key is not None:
+            cached = self._cached_background(key)
+            if cached is not None:
+                return cached
+
+        background = self._render_background(size, options, original)
+        if key is not None:
+            self._store_background(key, background)
+            return background.copy()
+        return background
 
     def compose(
         self, original: Image.Image, cutout: Image.Image, options: ProcessOptions
