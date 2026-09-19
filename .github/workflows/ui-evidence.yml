@@ -51,7 +51,7 @@ jobs:
           )
           foreach ($entry in $matrix) {
             $output = Join-Path 'ui_evidence' $entry.Label
-            python tools/capture_ui_acceptance.py `
+            python tools/capture_current_ui_acceptance.py `
               --size 1600x900 `
               --ui-scale $entry.Scale `
               --label $entry.Label `
