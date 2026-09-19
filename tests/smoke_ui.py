@@ -86,6 +86,11 @@ def main() -> None:
     # process can exercise 100%, 125% and 150% scaling-class window sizes.
     root.minsize(placement.min_width, placement.min_height)
     root.geometry(f"{target_width}x{target_height}+0+0")
+    # Windows applies top-level geometry asynchronously. A full update is
+    # required here; update_idletasks() alone can leave the previous minimum
+    # size visible to winfo_width()/winfo_height() on hosted runners.
+    root.update_idletasks()
+    root.update()
     root.update_idletasks()
 
     assert abs(root.winfo_width() - target_width) <= 2, (
