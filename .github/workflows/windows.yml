@@ -103,6 +103,50 @@ jobs:
           }
           Write-Host "BackgroundPXR reduced-size UI modes tested: $tested"
 
+  frozen-runtime:
+    # Qualify the packaged Windows runtime on PRs and on integrated main heads.
+    # Feature-branch push runs already get the fast test job, while the PR run
+    # performs the expensive PyInstaller check once. Release pushes are covered
+    # by build-release below, which runs the same self-test before publishing.
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'release:'))
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install frozen-runtime dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+      - name: Generate BackgroundPXR icon
+        run: python -m backgroundpxr.branding --output build_assets
+      - name: Build Windows qualification package
+        run: pyinstaller --noconfirm --clean BackgroundPXR.spec
+      - name: Verify frozen AI runtime
+        shell: pwsh
+        run: |
+          $pymattingMeta = Get-ChildItem dist/BackgroundPXR -Recurse -Directory | Where-Object { $_.Name -match '^pymatting-.*\.dist-info$' }
+          if (-not $pymattingMeta) { throw 'pymatting dist-info metadata is missing from the frozen build.' }
+
+          Remove-Item backgroundpxr_runtime_selftest.txt -ErrorAction SilentlyContinue
+          $proc = Start-Process -FilePath ".\dist\BackgroundPXR\BackgroundPXR.exe" -ArgumentList "--self-test-runtime" -Wait -PassThru
+          $runtimeExit = $proc.ExitCode
+
+          Write-Host '--- BackgroundPXR frozen runtime self-test ---'
+          if (Test-Path backgroundpxr_runtime_selftest.txt) {
+            Get-Content backgroundpxr_runtime_selftest.txt
+          } else {
+            Write-Host 'Self-test report file was not created.'
+          }
+
+          if ($runtimeExit -ne 0) { throw "BackgroundPXR bundled runtime self-test failed with exit code $runtimeExit" }
+          if (-not (Test-Path backgroundpxr_runtime_selftest.txt)) { throw 'BackgroundPXR bundled runtime self-test did not create a report.' }
+          $selfTest = (Get-Content backgroundpxr_runtime_selftest.txt -Raw).Trim()
+          if ($selfTest -ne 'OK') { throw "BackgroundPXR bundled runtime self-test did not return OK: $selfTest" }
+
   build-release:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:'))
     needs: test
@@ -111,6 +155,19 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - name: Enforce 1.0+ GitHub release gate
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $versionText = (Select-String -Path backgroundpxr/__init__.py -Pattern '__version__ = "([^"]+)"').Matches.Groups[1].Value
+          try {
+            $releaseVersion = [version]$versionText
+          } catch {
+            throw "Refusing release: invalid BackgroundPXR version '$versionText'."
+          }
+          if ($releaseVersion.Major -lt 1) {
+            throw "Refusing pre-1.0 GitHub release for BackgroundPXR $versionText. Complete the 1.0 quality gates first."
+          }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
