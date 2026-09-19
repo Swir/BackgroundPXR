@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from .display import WindowPlacement, plan_window
 from .studio_v046 import BackgroundPXRStudio046App
 
 
@@ -104,7 +105,7 @@ class DeferredStudioUpdates:
 
 
 class BackgroundPXRStudio047App(BackgroundPXRStudio046App):
-    """Studio Pro with coalesced preview rendering and settings persistence."""
+    """Studio Pro with coalesced updates and DPI-safe startup geometry."""
 
     def __init__(self, root):
         self._studio_updates = DeferredStudioUpdates(
@@ -113,6 +114,19 @@ class BackgroundPXRStudio047App(BackgroundPXRStudio046App):
             self._run_deferred_settings_save,
         )
         super().__init__(root)
+
+    def _configure_root(self):
+        # Keep the established branding/theme setup, then replace only the
+        # fixed geometry policy with one that cannot exceed the logical
+        # desktop Windows exposes after display scaling.
+        super()._configure_root()
+        placement = plan_window(
+            self.root.winfo_screenwidth(),
+            self.root.winfo_screenheight(),
+        )
+        self._startup_layout: WindowPlacement = placement
+        self.root.geometry(placement.geometry)
+        self.root.minsize(placement.min_width, placement.min_height)
 
     def _studio_recompose(self):
         """Schedule one preview update for a burst of high-frequency controls."""

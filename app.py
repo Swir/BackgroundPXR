@@ -51,6 +51,12 @@ def main() -> None:
             report.write_text(traceback.format_exc(), encoding="utf-8")
             raise SystemExit(23)
 
+    # DPI awareness must be selected before Tk creates the first native
+    # window; otherwise Windows can bitmap-scale the UI and clip controls.
+    from backgroundpxr.display import enable_windows_dpi_awareness
+
+    enable_windows_dpi_awareness()
+
     from backgroundpxr.studio_v047 import BackgroundPXRStudio047App
     from backgroundpxr.ui import create_root
 
