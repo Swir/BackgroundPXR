@@ -3,11 +3,13 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from PIL import Image
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.studio_v044 import BackgroundPXRStudio044App
+from backgroundpxr.studio_v045 import BackgroundPXRStudio045App
 from backgroundpxr.ui import create_root
 
 
@@ -29,7 +31,7 @@ def _page_fits(page, widgets):
 def main() -> None:
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRStudio044App(root)
+    app = BackgroundPXRStudio045App(root)
 
     try:
         root.state("normal")
@@ -68,6 +70,7 @@ def main() -> None:
     assert app._diag_percent_var.get() == "0%"
     assert app.diagnostics.path.name == "backgroundpxr.log"
     assert app._last_brush_point is None
+    assert app._live_recompose_after_id is None
     assert bool(app.mask_overlay.get())
 
     # Left side remains readable on the user's 1600x900 class of display.
@@ -147,15 +150,30 @@ def main() -> None:
     assert not app.wipe_frame.winfo_ismapped()
     assert app.style_presets.winfo_ismapped()
 
-    # The manual editor overlay stays in the existing compact control row and
-    # the precision cursor exposes brush size plus hardness without clipping.
+    # The manual editor overlay stays compact. With the overlay disabled the
+    # editor prefers the real composed result, and plain pointer motion updates
+    # only cursor primitives instead of rebuilding the full image preview.
     app.tool = "restore"
     app._after_transform = (0.0, 0.0, 1.0)
-    app._draw_brush_cursor(60, 60)
+    app.preview_after = Image.new("RGBA", (8, 8), (20, 40, 60, 255))
+    app.mask_overlay.set(False)
+    assert app._after_image() is app.preview_after
+
+    original_refresh = app._refresh_after_only
+
+    def unexpected_refresh():
+        raise AssertionError("Cursor-only motion must not rebuild the preview")
+
+    app._refresh_after_only = unexpected_refresh
+    try:
+        event = type("PointerEvent", (), {"x": 60, "y": 60})()
+        app._on_after_motion(event)
+    finally:
+        app._refresh_after_only = original_refresh
+
     cursor_items = app.after_canvas.find_withtag("cursor")
     assert len(cursor_items) >= 4
     app.after_canvas.delete("cursor")
-    app.mask_overlay.set(False)
     app._toggle_mask_overlay()
     assert bool(app.mask_overlay.get())
 
