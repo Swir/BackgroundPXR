@@ -9,7 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.studio_v045 import BackgroundPXRStudio045App
+from backgroundpxr.studio_v046 import BackgroundPXRStudio046App
 from backgroundpxr.ui import create_root
 
 
@@ -31,7 +31,7 @@ def _page_fits(page, widgets):
 def main() -> None:
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRStudio045App(root)
+    app = BackgroundPXRStudio046App(root)
 
     try:
         root.state("normal")
@@ -64,6 +64,8 @@ def main() -> None:
         app.wipe_slider,
         app.wipe_value_label,
         app.mask_overlay_switch,
+        app.undo_mask_btn,
+        app.redo_mask_btn,
         app.export_mask_btn,
     ]
     assert all(widget is not None and widget.winfo_exists() for widget in required)
@@ -72,6 +74,10 @@ def main() -> None:
     assert app._last_brush_point is None
     assert app._live_recompose_after_id is None
     assert bool(app.mask_overlay.get())
+    assert app.undo_mask_btn.cget("state") == "disabled"
+    assert app.redo_mask_btn.cget("state") == "disabled"
+    assert app.tool_buttons["undo"].cget("state") == "disabled"
+    assert app.tool_buttons["redo"].cget("state") == "disabled"
 
     # Left side remains readable on the user's 1600x900 class of display.
     assert app.left_panel.winfo_width() >= 326, (
@@ -181,6 +187,8 @@ def main() -> None:
         app.remove_btn,
         app.restore_btn,
         app.erase_btn,
+        app.undo_mask_btn,
+        app.redo_mask_btn,
         app.export_btn,
         app.process_all_btn,
         app.export_mask_btn,
@@ -204,6 +212,8 @@ def main() -> None:
         app.wipe_label,
         app.wipe_value_label,
         app.mask_overlay_switch,
+        app.undo_mask_btn,
+        app.redo_mask_btn,
         app.export_title,
         app.status_label,
         app._diag_button,
