@@ -26,17 +26,18 @@
 
 | Item | Status |
 |---|---|
-| Current line | **0.4.0 — Studio Pro** |
+| Current development line | **1.0.0rc1 — 1.0 release-candidate qualification** |
 | Platform | Windows 10 / 11 |
 | Processing | Local after the required AI model is available |
 | Latest public release | [v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0) |
+| Candidate publication | **Not published — qualification artifact only** |
 | 1.0 acceptance progress | **70.0% — 7/10 verified items** |
 
 <p align="center">
   <img width="100%" src="assets/readme/progress-card.svg" alt="BackgroundPXR 1.0 acceptance progress — 70.0 percent" />
 </p>
 
-**1.0 acceptance progress: 70.0% (7/10).** The finite denominator is defined in [`ROADMAP_1_0.md`](ROADMAP_1_0.md). Release readiness remains separate and is currently **BLOCKED**.
+**1.0 acceptance progress: 70.0% (7/10).** The finite denominator is defined in [`ROADMAP_1_0.md`](ROADMAP_1_0.md). Release readiness remains separate and is currently **BLOCKED**. The `1.0.0rc1` development candidate is for exact Windows package qualification only; public downloads remain v0.4.0 until all 1.0 gates pass.
 
 ## 🚀 Overview
 
@@ -74,7 +75,7 @@ Download [BackgroundPXR v0.4.0](https://github.com/Swir/BackgroundPXR/releases/t
 4. Add an image, choose a Studio mode and AI quality mode.
 5. Review the cutout, refine difficult edges if needed, then export.
 
-The packaged Windows release does not require a separate Python installation.
+The packaged Windows release does not require a separate Python installation. Release-candidate artifacts produced by CI are qualification evidence and are not presented here as public downloads.
 
 ### From source
 
@@ -115,7 +116,7 @@ The application is designed around Windows. Repository checks do not establish a
 
 ### Studio Pro inspector
 
-The 0.4 line introduces a cleaner three-page inspector: **AI / CREATE / EXPORT**. Creative controls no longer have to compete for vertical space in one long panel.
+The Studio Pro line uses a cleaner three-page inspector: **AI / CREATE / EXPORT**. Creative controls no longer have to compete for vertical space in one long panel.
 
 - scale and position the subject after AI processing;
 - add a custom-color outline / sticker border;
@@ -125,7 +126,6 @@ The 0.4 line introduces a cleaner three-page inspector: **AI / CREATE / EXPORT**
 - use Sticker, Product and Portrait style presets.
 
 ### Manual refinement
-
 
 - **Restore brush** brings back subject areas removed by the AI mask.
 - **Erase brush** removes remaining background areas.
@@ -192,17 +192,17 @@ python tools/readme_progress.py --check
 
 ## 🧪 Release Quality Checks
 
-The Windows workflow runs on pull requests and pushes. Its test job currently performs:
+The Windows workflow runs on pull requests and pushes. Its test job currently performs syntax compilation, unit tests, the fixed 1600×900 GUI gate, Windows scaling checks and the resize/HiDPI matrix.
 
-- Python syntax compilation;
-- unit tests;
-- GUI startup smoke test.
+On pull requests, the frozen-runtime job also builds the exact portable candidate from the checked-out head, verifies bundled runtime metadata, runs `BackgroundPXR.exe --self-test-runtime`, creates the versioned ZIP and SHA-256 sidecar, validates the final archive with `tools/verify_release_package.py`, and uploads the qualification artifact. A green candidate artifact is required before the 1.0 package gate can be checked.
 
-Release builds additionally package the application, verify bundled runtime metadata, run the frozen AI-runtime self-test, create the ZIP and SHA-256 sidecar, and publish only on the workflow's release path. This documentation migration does not create a release.
+The GitHub Release publication path remains separate and must not be used before the full 1.0 acceptance gate is satisfied.
 
 ## 📦 Releases
 
 Latest public release: **[v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0)**, published September 10, 2026. It provides `BackgroundPXR-0.4.0-Windows.zip` and its SHA-256 sidecar.
+
+The current `1.0.0rc1` identifier is a development/qualification candidate only; it is not a GitHub Release.
 
 [**Browse all releases →**](https://github.com/Swir/BackgroundPXR/releases)
 
@@ -212,13 +212,13 @@ Latest public release: **[v0.4.0](https://github.com/Swir/BackgroundPXR/releases
 - Always inspect important exports before publishing them.
 - Model availability/downloads can affect first-run readiness.
 - A successful automated test does not guarantee a perfect cutout for every photograph.
-- The repository currently has no `LICENSE` file; this documentation migration does not change licensing terms.
+- The repository currently has no `LICENSE` file; this documentation update does not change licensing terms.
 
 ## 🇵🇱 Polski — skrót
 
 **BackgroundPXR** to aplikacja dla Windows 10/11 do lokalnego usuwania i edycji tła zdjęć przy użyciu AI. Oferuje tryby **Wytnij / Podmień / Rozmyj / Studio**, przezroczyste PNG, własne tło lub kolor, alpha matting, ręczne narzędzia **Przywróć / Usuń**, zoom do 800%, Cofnij/Ponów, batch i eksport PNG/JPG/WebP. Po pobraniu potrzebnego modelu zdjęcia są przetwarzane lokalnie.
 
-Pobierz aktualną wersję: **[BackgroundPXR v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0)**.
+Publicznie pobierz aktualną wersję: **[BackgroundPXR v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0)**. Kandydat `1.0.0rc1` służy wyłącznie do kwalifikacji przed wydaniem 1.0.
 
 ## 🔎 Search Keywords
 

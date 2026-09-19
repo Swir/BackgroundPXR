@@ -39,6 +39,11 @@ def test_valid_release_package_passes(tmp_path: Path) -> None:
     verify_release_package(archive, checksum, "0.4.0")
 
 
+def test_release_candidate_package_passes(tmp_path: Path) -> None:
+    archive, checksum = _package(tmp_path, version="1.0.0rc1")
+    verify_release_package(archive, checksum, "1.0.0rc1")
+
+
 def test_checksum_mismatch_is_rejected(tmp_path: Path) -> None:
     archive, checksum = _package(tmp_path)
     checksum.write_text(f"{'0' * 64}  {archive.name}\n", encoding="utf-8")
