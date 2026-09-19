@@ -13,10 +13,13 @@ class PackageVerificationError(RuntimeError):
 
 _REQUIRED_FILES = {
     "backgroundpxr/backgroundpxr.exe",
+    "backgroundpxr/build_info.txt",
     "backgroundpxr/readme.md",
     "backgroundpxr/release_notes.md",
 }
 _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
+_SOURCE_SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
+_ALLOWED_BUILD_CHANNELS = {"qualification", "release"}
 
 
 def _sha256(path: Path) -> str:
@@ -54,13 +57,48 @@ def _read_checksum(sidecar: Path, archive_name: str) -> str:
     return digest.lower()
 
 
-def verify_release_package(archive: Path, checksum: Path, version: str) -> None:
+def _read_build_info(text: str) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        key, separator, value = line.partition("=")
+        key = key.strip()
+        value = value.strip()
+        if not separator or not key or not value:
+            raise PackageVerificationError(f"Invalid BUILD_INFO line: {raw_line!r}")
+        if key in fields:
+            raise PackageVerificationError(f"Duplicate BUILD_INFO field: {key}")
+        fields[key] = value
+
+    missing = sorted({"version", "source_sha", "channel"} - fields.keys())
+    if missing:
+        raise PackageVerificationError(
+            "BUILD_INFO is missing required fields: " + ", ".join(missing)
+        )
+    if not _SOURCE_SHA_RE.fullmatch(fields["source_sha"]):
+        raise PackageVerificationError("BUILD_INFO source_sha must be a 40-character Git SHA")
+    if fields["channel"] not in _ALLOWED_BUILD_CHANNELS:
+        raise PackageVerificationError(
+            "BUILD_INFO channel must be qualification or release"
+        )
+    return fields
+
+
+def verify_release_package(
+    archive: Path,
+    checksum: Path,
+    version: str,
+    *,
+    source_sha: str | None = None,
+) -> None:
     """Validate a portable Windows package before it can become release evidence.
 
     The verifier is intentionally independent of PyInstaller. It checks the final
     ZIP that users receive: deterministic naming, checksum integrity, safe member
-    paths, required executable/documentation files, version coherence and the
-    permanent SWIR author branding.
+    paths, required executable/documentation files, exact build provenance,
+    version coherence and the permanent SWIR author branding.
     """
     archive = Path(archive)
     checksum = Path(checksum)
@@ -77,6 +115,9 @@ def verify_release_package(archive: Path, checksum: Path, version: str) -> None:
         )
     if not archive.is_file() or archive.stat().st_size == 0:
         raise PackageVerificationError(f"Release archive is missing or empty: {archive}")
+
+    if source_sha is not None and not _SOURCE_SHA_RE.fullmatch(source_sha):
+        raise PackageVerificationError("Expected source SHA must be a 40-character Git SHA")
 
     expected_digest = _read_checksum(checksum, archive.name)
     actual_digest = _sha256(archive)
@@ -112,13 +153,23 @@ def verify_release_package(archive: Path, checksum: Path, version: str) -> None:
             notes = bundle.read(normalized["backgroundpxr/release_notes.md"]).decode(
                 "utf-8-sig"
             )
+            build_info_text = bundle.read(normalized["backgroundpxr/build_info.txt"]).decode(
+                "utf-8-sig"
+            )
     except zipfile.BadZipFile as exc:
         raise PackageVerificationError(f"Invalid ZIP archive: {archive}") from exc
     except UnicodeDecodeError as exc:
         raise PackageVerificationError("Packaged documentation must be valid UTF-8") from exc
 
-    if version not in readme:
-        raise PackageVerificationError(f"README does not reference package version {version}")
+    build_info = _read_build_info(build_info_text)
+    if build_info["version"] != version:
+        raise PackageVerificationError(
+            f"BUILD_INFO version {build_info['version']!r} does not match package version {version!r}"
+        )
+    if source_sha is not None and build_info["source_sha"].lower() != source_sha.lower():
+        raise PackageVerificationError(
+            "BUILD_INFO source_sha does not match the exact source commit used for qualification"
+        )
     if f"BackgroundPXR {version}" not in notes:
         raise PackageVerificationError(
             f"RELEASE_NOTES.md does not identify BackgroundPXR {version}"
@@ -134,13 +185,22 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--archive", required=True, type=Path)
     parser.add_argument("--checksum", required=True, type=Path)
     parser.add_argument("--version", required=True)
+    parser.add_argument(
+        "--source-sha",
+        help="Expected exact Git commit SHA recorded inside BUILD_INFO.txt",
+    )
     return parser
 
 
 def main() -> int:
     args = _parser().parse_args()
     try:
-        verify_release_package(args.archive, args.checksum, args.version)
+        verify_release_package(
+            args.archive,
+            args.checksum,
+            args.version,
+            source_sha=args.source_sha,
+        )
     except PackageVerificationError as exc:
         raise SystemExit(f"BackgroundPXR release package verification failed: {exc}") from exc
     print(
