@@ -120,7 +120,9 @@ def drain_events(app):
 
 def write_image(path: Path, color):
     path.parent.mkdir(parents=True, exist_ok=True)
-    Image.new("RGBA", (8, 8), color).save(path)
+    mode = "RGB" if path.suffix.lower() in {".jpg", ".jpeg"} else "RGBA"
+    fill = color[:3] if mode == "RGB" else color
+    Image.new(mode, (8, 8), fill).save(path)
 
 
 def test_image_export_failure_is_logged_and_shown_without_raising(tmp_path, monkeypatch):
