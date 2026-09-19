@@ -9,7 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.studio_v046 import BackgroundPXRStudio046App
+from backgroundpxr.studio_v047 import BackgroundPXRStudio047App
 from backgroundpxr.ui import create_root
 
 
@@ -31,7 +31,7 @@ def _page_fits(page, widgets):
 def main() -> None:
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRStudio046App(root)
+    app = BackgroundPXRStudio047App(root)
 
     try:
         root.state("normal")
@@ -73,6 +73,7 @@ def main() -> None:
     assert app.diagnostics.path.name == "backgroundpxr.log"
     assert app._last_brush_point is None
     assert app._live_recompose_after_id is None
+    assert not app._studio_updates.render_pending
     assert bool(app.mask_overlay.get())
     assert app.undo_mask_btn.cget("state") == "disabled"
     assert app.redo_mask_btn.cget("state") == "disabled"
