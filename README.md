@@ -26,18 +26,18 @@
 
 | Item | Status |
 |---|---|
-| Current development line | **1.0.0rc1 — 1.0 release-candidate qualification** |
+| Current development line | **1.0.0rc1 — qualified Windows release candidate** |
 | Platform | Windows 10 / 11 |
 | Processing | Local after the required AI model is available |
 | Latest public release | [v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0) |
-| Candidate publication | **Not published — qualification artifact only** |
-| 1.0 acceptance progress | **70.0% — 7/10 verified items** |
+| Candidate publication | **Not published — exact-head qualification artifact verified** |
+| 1.0 acceptance progress | **80.0% — 8/10 verified items** |
 
 <p align="center">
-  <img width="100%" src="assets/readme/progress-card.svg" alt="BackgroundPXR 1.0 acceptance progress — 70.0 percent" />
+  <img width="100%" src="assets/readme/progress-card.svg" alt="BackgroundPXR 1.0 acceptance progress — 80.0 percent" />
 </p>
 
-**1.0 acceptance progress: 70.0% (7/10).** The finite denominator is defined in [`ROADMAP_1_0.md`](ROADMAP_1_0.md). Release readiness remains separate and is currently **BLOCKED**. The `1.0.0rc1` development candidate is for exact Windows package qualification only; public downloads remain v0.4.0 until all 1.0 gates pass.
+**1.0 acceptance progress: 80.0% (8/10).** The finite denominator is defined in [`ROADMAP_1_0.md`](ROADMAP_1_0.md). Release readiness remains separate and is currently **BLOCKED**. The `1.0.0rc1` candidate has passed exact-head Windows package qualification; public downloads remain v0.4.0 until the final 1.0 regression/manual gate and release verification pass.
 
 ## 🚀 Overview
 
@@ -181,7 +181,7 @@ The initial AI-model download is separate from photo processing; an Internet con
 
 The canonical finite 1.0 acceptance scope is maintained in [`ROADMAP_1_0.md`](ROADMAP_1_0.md).
 
-**Current verified progress: 7 / 10 = 70.0%.** The percentage measures acceptance work toward 1.0; it is not an AI cutout-accuracy score and does not by itself mean the Release gate has passed.
+**Current verified progress: 8 / 10 = 80.0%.** The percentage measures acceptance work toward 1.0; it is not an AI cutout-accuracy score and does not by itself mean the Release gate has passed.
 
 `tools/readme_progress.py` derives the card and roadmap mini directly from that checklist:
 
@@ -194,7 +194,7 @@ python tools/readme_progress.py --check
 
 The Windows workflow runs on pull requests and pushes. Its test job currently performs syntax compilation, unit tests, the fixed 1600×900 GUI gate, Windows scaling checks and the resize/HiDPI matrix.
 
-On pull requests, the frozen-runtime job also builds the exact portable candidate from the checked-out head, verifies bundled runtime metadata, runs `BackgroundPXR.exe --self-test-runtime`, creates the versioned ZIP and SHA-256 sidecar, validates the final archive with `tools/verify_release_package.py`, and uploads the qualification artifact. A green candidate artifact is required before the 1.0 package gate can be checked.
+On pull requests, the frozen-runtime job checks out and asserts the exact PR head, builds the portable candidate from that source, verifies bundled runtime metadata, runs `BackgroundPXR.exe --self-test-runtime`, creates the versioned ZIP and SHA-256 sidecar, validates the final archive with `tools/verify_release_package.py`, and uploads a qualification artifact named with the exact source SHA. The `1.0.0rc1` candidate has passed that package gate.
 
 The GitHub Release publication path remains separate and must not be used before the full 1.0 acceptance gate is satisfied.
 
@@ -218,7 +218,7 @@ The current `1.0.0rc1` identifier is a development/qualification candidate only;
 
 **BackgroundPXR** to aplikacja dla Windows 10/11 do lokalnego usuwania i edycji tła zdjęć przy użyciu AI. Oferuje tryby **Wytnij / Podmień / Rozmyj / Studio**, przezroczyste PNG, własne tło lub kolor, alpha matting, ręczne narzędzia **Przywróć / Usuń**, zoom do 800%, Cofnij/Ponów, batch i eksport PNG/JPG/WebP. Po pobraniu potrzebnego modelu zdjęcia są przetwarzane lokalnie.
 
-Publicznie pobierz aktualną wersję: **[BackgroundPXR v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0)**. Kandydat `1.0.0rc1` służy wyłącznie do kwalifikacji przed wydaniem 1.0.
+Publicznie pobierz aktualną wersję: **[BackgroundPXR v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0)**. Kandydat `1.0.0rc1` przeszedł kwalifikację pakietu, ale pozostaje nieopublikowany do czasu ukończenia wszystkich bramek 1.0.
 
 ## 🔎 Search Keywords
 
