@@ -24,8 +24,128 @@ jobs:
         run: python -m pytest -q
       - name: Verify SWIR progress assets
         run: python tools/readme_progress.py --check
-      - name: GUI startup smoke test
+      - name: Provision 1600x900 Windows UI desktop
+        shell: pwsh
+        run: |
+          # GitHub's hosted Windows desktop starts at 1024x768. Use the native
+          # ServerCore cmdlet so the 1600x900 gate validates a real viewport
+          # rather than silently testing a clamped window.
+          & powershell.exe -NoLogo -NoProfile -Command @'
+          Set-DisplayResolution -Width 1600 -Height 900 -Force
+          '@
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to configure the 1600x900 acceptance desktop.'
+          }
+
+          Add-Type @"
+          using System.Runtime.InteropServices;
+          public static class PxrDisplayMetrics {
+              [DllImport("user32.dll")]
+              public static extern int GetSystemMetrics(int index);
+          }
+          "@
+          $actualWidth = [PxrDisplayMetrics]::GetSystemMetrics(0)
+          $actualHeight = [PxrDisplayMetrics]::GetSystemMetrics(1)
+          Write-Host "BackgroundPXR CI desktop: ${actualWidth}x${actualHeight}"
+          if ($actualWidth -ne 1600 -or $actualHeight -ne 900) {
+            throw "Hosted runner rejected 1600x900; actual ${actualWidth}x${actualHeight}."
+          }
+      - name: GUI acceptance 1600x900
         run: python tests/smoke_ui.py
+      - name: GUI resize and HiDPI acceptance matrix
+        shell: pwsh
+        run: |
+          Add-Type @"
+          using System.Runtime.InteropServices;
+          public static class PxrMatrixDisplayMetrics {
+              [DllImport("user32.dll")]
+              public static extern int GetSystemMetrics(int index);
+          }
+          "@
+
+          # Hosted display drivers expose a different mode set over time. Try a
+          # broad set of common Windows laptop/logical-desktop sizes, run the
+          # full Studio smoke test for every supported mode, and require at
+          # least one reduced-size desktop in addition to the fixed 1600x900 gate.
+          $sizes = @(
+            '1536x864',
+            '1440x900',
+            '1366x768',
+            '1280x800',
+            '1280x768',
+            '1280x720',
+            '1152x864'
+          )
+          $tested = 0
+          foreach ($size in $sizes) {
+            Write-Host "--- BackgroundPXR UI acceptance candidate: $size ---"
+            $parts = $size -split 'x'
+            $width = [int]$parts[0]
+            $height = [int]$parts[1]
+            & powershell.exe -NoLogo -NoProfile -Command "Set-DisplayResolution -Width $width -Height $height -Force"
+            Start-Sleep -Milliseconds 500
+
+            $actualWidth = [PxrMatrixDisplayMetrics]::GetSystemMetrics(0)
+            $actualHeight = [PxrMatrixDisplayMetrics]::GetSystemMetrics(1)
+            if ($actualWidth -ne $width -or $actualHeight -ne $height) {
+              Write-Host "Hosted runner does not expose $size; actual ${actualWidth}x${actualHeight}. Skipping this candidate."
+              continue
+            }
+
+            $env:PXR_SMOKE_SIZE = $size
+            python tests/smoke_ui.py
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $tested += 1
+          }
+
+          if ($tested -lt 1) {
+            throw 'No reduced-size Windows display mode was available for the acceptance matrix.'
+          }
+          Write-Host "BackgroundPXR reduced-size UI modes tested: $tested"
+
+  frozen-runtime:
+    # Qualify the packaged Windows runtime on PRs and on integrated main heads.
+    # Feature-branch push runs already get the fast test job, while the PR run
+    # performs the expensive PyInstaller check once. Release pushes are covered
+    # by build-release below, which runs the same self-test before publishing.
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'release:'))
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install frozen-runtime dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+      - name: Generate BackgroundPXR icon
+        run: python -m backgroundpxr.branding --output build_assets
+      - name: Build Windows qualification package
+        run: pyinstaller --noconfirm --clean BackgroundPXR.spec
+      - name: Verify frozen AI runtime
+        shell: pwsh
+        run: |
+          $pymattingMeta = Get-ChildItem dist/BackgroundPXR -Recurse -Directory | Where-Object { $_.Name -match '^pymatting-.*\.dist-info$' }
+          if (-not $pymattingMeta) { throw 'pymatting dist-info metadata is missing from the frozen build.' }
+
+          Remove-Item backgroundpxr_runtime_selftest.txt -ErrorAction SilentlyContinue
+          $proc = Start-Process -FilePath ".\dist\BackgroundPXR\BackgroundPXR.exe" -ArgumentList "--self-test-runtime" -Wait -PassThru
+          $runtimeExit = $proc.ExitCode
+
+          Write-Host '--- BackgroundPXR frozen runtime self-test ---'
+          if (Test-Path backgroundpxr_runtime_selftest.txt) {
+            Get-Content backgroundpxr_runtime_selftest.txt
+          } else {
+            Write-Host 'Self-test report file was not created.'
+          }
+
+          if ($runtimeExit -ne 0) { throw "BackgroundPXR bundled runtime self-test failed with exit code $runtimeExit" }
+          if (-not (Test-Path backgroundpxr_runtime_selftest.txt)) { throw 'BackgroundPXR bundled runtime self-test did not create a report.' }
+          $selfTest = (Get-Content backgroundpxr_runtime_selftest.txt -Raw).Trim()
+          if ($selfTest -ne 'OK') { throw "BackgroundPXR bundled runtime self-test did not return OK: $selfTest" }
 
   build-release:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:'))
@@ -35,6 +155,19 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - name: Enforce 1.0+ GitHub release gate
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $versionText = (Select-String -Path backgroundpxr/__init__.py -Pattern '__version__ = "([^"]+)"').Matches.Groups[1].Value
+          try {
+            $releaseVersion = [version]$versionText
+          } catch {
+            throw "Refusing release: invalid BackgroundPXR version '$versionText'."
+          }
+          if ($releaseVersion.Major -lt 1) {
+            throw "Refusing pre-1.0 GitHub release for BackgroundPXR $versionText. Complete the 1.0 quality gates first."
+          }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

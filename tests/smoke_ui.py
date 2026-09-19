@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -9,7 +10,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.studio_v047 import BackgroundPXRStudio047App
+from backgroundpxr.display import enable_windows_dpi_awareness, plan_window
+from backgroundpxr.studio_v049 import BackgroundPXRStudio049App
 from backgroundpxr.ui import create_root
 
 
@@ -28,17 +30,99 @@ def _page_fits(page, widgets):
     return height, max(bottoms, default=0)
 
 
+def _smoke_size() -> tuple[int, int]:
+    value = os.environ.get("PXR_SMOKE_SIZE", "1600x900").strip().lower()
+    try:
+        width_text, height_text = value.split("x", 1)
+        width = int(width_text)
+        height = int(height_text)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Invalid PXR_SMOKE_SIZE={value!r}; expected WIDTHxHEIGHT"
+        ) from exc
+    if width < 1024 or height < 640:
+        raise ValueError(
+            f"PXR_SMOKE_SIZE={value!r} is below the supported acceptance floor"
+        )
+    return width, height
+
+
+def _assert_inside_root(root, widget, *, label: str) -> None:
+    root.update_idletasks()
+    root_x = root.winfo_rootx()
+    root_y = root.winfo_rooty()
+    x = widget.winfo_rootx() - root_x
+    y = widget.winfo_rooty() - root_y
+    right = x + widget.winfo_width()
+    bottom = y + widget.winfo_height()
+    root_w = root.winfo_width()
+    root_h = root.winfo_height()
+    tolerance = 3
+    assert x >= -tolerance, f"{label} clipped on left: x={x}"
+    assert y >= -tolerance, f"{label} clipped on top: y={y}"
+    assert right <= root_w + tolerance, (
+        f"{label} clipped on right: {right}>{root_w}"
+    )
+    assert bottom <= root_h + tolerance, (
+        f"{label} clipped on bottom: {bottom}>{root_h}"
+    )
+
+
 def main() -> None:
+    target_width, target_height = _smoke_size()
+    placement = plan_window(target_width, target_height)
+
+    # Match the production entry point: DPI mode is selected before Tk creates
+    # its first native window. CI provisions the requested physical desktop.
+    dpi_status = enable_windows_dpi_awareness()
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRStudio047App(root)
+    app = BackgroundPXRStudio049App(root)
 
+    actual_screen = (root.winfo_screenwidth(), root.winfo_screenheight())
+    assert actual_screen == (target_width, target_height), (
+        f"Acceptance desktop mismatch: {actual_screen} != "
+        f"{(target_width, target_height)}"
+    )
+
+    configured_min = tuple(int(value) for value in root.minsize())
+    assert configured_min == (placement.min_width, placement.min_height), (
+        f"Studio minimum does not follow desktop policy: {configured_min} != "
+        f"{(placement.min_width, placement.min_height)}"
+    )
+    assert app._compact_inspector == (
+        target_height <= app.COMPACT_SCREEN_HEIGHT
+    ), "Responsive inspector mode does not match desktop height"
+
+    # Test the restored Studio geometry rather than the maximized state used on
+    # Windows. This catches clipping at the actual startup fallback dimensions.
+    root.deiconify()
     try:
         root.state("normal")
     except Exception:
         pass
-    root.geometry("1600x900+0+0")
+    root.update()
+    root.geometry(placement.geometry)
     root.update_idletasks()
+    root.update()
+    root.update_idletasks()
+
+    actual_width = root.winfo_width()
+    actual_height = root.winfo_height()
+    print(
+        "BackgroundPXR viewport probe: "
+        f"desktop={target_width}x{target_height} "
+        f"planned={placement.width}x{placement.height} "
+        f"actual={actual_width}x{actual_height} "
+        f"min={configured_min[0]}x{configured_min[1]} "
+        f"dpi={dpi_status} compact={app._compact_inspector} state={root.state()}"
+    )
+    assert abs(actual_width - placement.width) <= 2, (
+        f"Unexpected test width: {actual_width} != {placement.width}"
+    )
+    assert abs(actual_height - placement.height) <= 2, (
+        f"Unexpected test height: {actual_height} != {placement.height}"
+    )
 
     required = [
         app.before_canvas,
@@ -67,6 +151,7 @@ def main() -> None:
         app.undo_mask_btn,
         app.redo_mask_btn,
         app.export_mask_btn,
+        app.lang,
     ]
     assert all(widget is not None and widget.winfo_exists() for widget in required)
     assert app._diag_percent_var.get() == "0%"
@@ -80,7 +165,7 @@ def main() -> None:
     assert app.tool_buttons["undo"].cget("state") == "disabled"
     assert app.tool_buttons["redo"].cget("state") == "disabled"
 
-    # Left side remains readable on the user's 1600x900 class of display.
+    # Project and Studio panels remain readable across the resize/HiDPI matrix.
     assert app.left_panel.winfo_width() >= 326, (
         f"Left sidebar is too narrow: {app.left_panel.winfo_width()}"
     )
@@ -90,6 +175,19 @@ def main() -> None:
         app.clear_btn.winfo_x() + app.clear_btn.winfo_width()
         <= clear_parent.winfo_width() + 2
     )
+    assert app.right_panel.winfo_width() >= 420
+    assert app.before_canvas.winfo_width() >= 120
+    assert app.after_canvas.winfo_width() >= 120
+
+    for label, widget in (
+        ("left panel", app.left_panel),
+        ("right panel", app.right_panel),
+        ("before preview", app.before_canvas),
+        ("after preview", app.after_canvas),
+        ("language selector", app.lang),
+        ("GitHub branding", app.footer_github),
+    ):
+        _assert_inside_root(root, widget, label=label)
 
     # 0.3.4 workflow is retained.
     assert app.studio_mode.get() == "cutout"
@@ -98,18 +196,19 @@ def main() -> None:
     app._toggle_filmstrip()
     root.update_idletasks()
     assert app._filmstrip_expanded
+    _assert_inside_root(root, app.filmstrip_toggle, label="filmstrip toggle")
     app._toggle_filmstrip()
     root.update_idletasks()
     assert not app._filmstrip_expanded
 
     # Studio Pro inspector uses pages so controls do not need to be crushed.
-    assert app.right_panel.winfo_width() >= 420
     assert len(app.inspector_tabs.cget("values")) == 3
 
     app._show_inspector("ai")
     root.update_idletasks()
     ai_h, ai_bottom = _page_fits(app.ai_page, [app.ai_card, app.refine_card])
     assert ai_bottom <= ai_h, f"AI inspector clipped: {ai_bottom}>{ai_h}"
+    _assert_inside_root(root, app.remove_btn, label="AI remove button")
 
     app._show_inspector("create")
     root.update_idletasks()
@@ -119,6 +218,14 @@ def main() -> None:
     assert create_bottom <= create_h, (
         f"Create inspector clipped: {create_bottom}>{create_h}"
     )
+    if app._compact_inspector:
+        for subtitle in (app.manual_sub, app.subject_sub, app.style_sub):
+            assert not subtitle.winfo_ismapped(), (
+                "Secondary inspector copy should collapse on short desktops"
+            )
+    _assert_inside_root(root, app.restore_btn, label="restore button")
+    _assert_inside_root(root, app.erase_btn, label="erase button")
+    _assert_inside_root(root, app.mask_overlay_switch, label="mask overlay switch")
 
     app._show_inspector("export")
     root.update_idletasks()
@@ -128,6 +235,8 @@ def main() -> None:
     assert export_bottom <= export_h, (
         f"Export inspector clipped: {export_bottom}>{export_h}"
     )
+    _assert_inside_root(root, app.export_btn, label="export button")
+    _assert_inside_root(root, app.export_mask_btn, label="mask export button")
 
     # Creative controls are wired and usable.
     assert app.subject_scale.get() > 0
@@ -152,6 +261,7 @@ def main() -> None:
     assert compare_bottom <= compare_h, (
         f"Compare inspector clipped: {compare_bottom}>{compare_h}"
     )
+    _assert_inside_root(root, app.wipe_slider, label="compare wipe slider")
     app._on_preview_mode(app._preview_label("result"))
     root.update_idletasks()
     assert not app.wipe_frame.winfo_ismapped()
@@ -226,7 +336,11 @@ def main() -> None:
         )
 
     root.destroy()
-    print("BackgroundPXR Studio Pro smoke test passed")
+    print(
+        "BackgroundPXR Studio Pro smoke test passed "
+        f"on {target_width}x{target_height} desktop with "
+        f"{placement.width}x{placement.height} restored window"
+    )
 
 
 if __name__ == "__main__":
