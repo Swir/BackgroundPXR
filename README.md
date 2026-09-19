@@ -30,13 +30,13 @@
 | Platform | Windows 10 / 11 |
 | Processing | Local after the required AI model is available |
 | Latest public release | [v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0) |
-| Product progress | **N/A** — no canonical roadmap with a reproducible completion denominator |
+| 1.0 acceptance progress | **60.0% — 6/10 verified items** |
 
 <p align="center">
-  <img width="100%" src="assets/readme/progress-card.svg" alt="BackgroundPXR product readiness progress — N/A" />
+  <img width="100%" src="assets/readme/progress-card.svg" alt="BackgroundPXR 1.0 acceptance progress — 60.0 percent" />
 </p>
 
-**Product progress: N/A.** The repository contains planned directions, but not a checklist or weighted roadmap that can honestly produce a 0–100% completion value.
+**1.0 acceptance progress: 60.0% (6/10).** The finite denominator is defined in [`ROADMAP_1_0.md`](ROADMAP_1_0.md). Release readiness remains separate and is currently **BLOCKED**.
 
 ## 🚀 Overview
 
@@ -179,15 +179,14 @@ The initial AI-model download is separate from photo processing; an Internet con
 
 ## 🗺️ Progress
 
-<p align="center">
-  <img width="100%" src="assets/readme/progress-mini.svg" alt="BackgroundPXR compact product progress — N/A" />
-</p>
+The canonical finite 1.0 acceptance scope is maintained in [`ROADMAP_1_0.md`](ROADMAP_1_0.md).
 
-The repository describes future directions such as richer Studio backgrounds, stronger bokeh controls, outline/sticker effects, mask export and a possible future PySide6/QML UI. Those are **planning directions**, not an authoritative completion denominator, so no product percentage is invented.
+**Current verified progress: 6 / 10 = 60.0%.** The percentage measures acceptance work toward 1.0; it is not an AI cutout-accuracy score and does not by itself mean the Release gate has passed.
 
-`tools/readme_progress.py` keeps this N/A state deterministic and will refuse to regenerate it if a root roadmap file appears before the calculation model is updated:
+`tools/readme_progress.py` derives the card and roadmap mini directly from that checklist:
 
 ```powershell
+python tools/readme_progress.py
 python tools/readme_progress.py --check
 ```
 
