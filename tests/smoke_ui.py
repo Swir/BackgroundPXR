@@ -76,10 +76,15 @@ def main() -> None:
     root.withdraw()
     app = BackgroundPXRStudio047App(root)
 
+    # The production shell asks Windows to maximize on desktop startup. For
+    # deterministic acceptance testing, make the hidden test window visible
+    # first and explicitly return it to normal state before applying geometry.
+    root.deiconify()
     try:
         root.state("normal")
     except Exception:
         pass
+    root.update()
 
     # CI normally runs on one fixed Windows desktop. Reapply the minimum that
     # BackgroundPXR would choose for the requested logical desktop so the same
@@ -93,11 +98,20 @@ def main() -> None:
     root.update()
     root.update_idletasks()
 
-    assert abs(root.winfo_width() - target_width) <= 2, (
-        f"Unexpected test width: {root.winfo_width()} != {target_width}"
+    actual_width = root.winfo_width()
+    actual_height = root.winfo_height()
+    print(
+        "BackgroundPXR viewport probe: "
+        f"requested={target_width}x{target_height} "
+        f"actual={actual_width}x{actual_height} "
+        f"screen={root.winfo_screenwidth()}x{root.winfo_screenheight()} "
+        f"state={root.state()}"
     )
-    assert abs(root.winfo_height() - target_height) <= 2, (
-        f"Unexpected test height: {root.winfo_height()} != {target_height}"
+    assert abs(actual_width - target_width) <= 2, (
+        f"Unexpected test width: {actual_width} != {target_width}"
+    )
+    assert abs(actual_height - target_height) <= 2, (
+        f"Unexpected test height: {actual_height} != {target_height}"
     )
 
     required = [
