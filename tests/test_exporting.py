@@ -37,6 +37,64 @@ def test_batch_output_reservation_is_windows_case_insensitive(tmp_path: Path):
     assert second.name == "PHOTO_pxr_2.png"
 
 
+def test_existing_export_is_never_silently_overwritten(tmp_path: Path):
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    existing = output_dir / "portrait_pxr.png"
+    existing.write_bytes(b"previous-export")
+
+    destination = reserve_output_path(
+        tmp_path / "camera" / "portrait.jpg",
+        output_dir,
+        "PNG",
+        "_pxr",
+    )
+
+    assert destination.name == "portrait_pxr_2.png"
+    assert existing.read_bytes() == b"previous-export"
+
+
+def test_existing_output_name_check_is_windows_case_insensitive(tmp_path: Path):
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    (output_dir / "PORTRAIT_PXR.PNG").write_bytes(b"previous-export")
+
+    destination = reserve_output_path(
+        tmp_path / "camera" / "portrait.jpg",
+        output_dir,
+        "PNG",
+        "_pxr",
+    )
+
+    assert destination.name == "portrait_pxr_2.png"
+
+
+def test_batch_numbering_skips_existing_and_reserved_names(tmp_path: Path):
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    (output_dir / "portrait_pxr.png").write_bytes(b"old")
+    (output_dir / "portrait_pxr_2.png").write_bytes(b"old-2")
+    reserved: set[str] = set()
+
+    first = reserve_output_path(
+        tmp_path / "camera-a" / "portrait.jpg",
+        output_dir,
+        "PNG",
+        "_pxr",
+        reserved,
+    )
+    second = reserve_output_path(
+        tmp_path / "camera-b" / "portrait.webp",
+        output_dir,
+        "PNG",
+        "_pxr",
+        reserved,
+    )
+
+    assert first.name == "portrait_pxr_3.png"
+    assert second.name == "portrait_pxr_4.png"
+
+
 def test_invalid_only_suffix_cannot_target_source_file(tmp_path: Path):
     source = tmp_path / "photo.png"
     source.write_bytes(b"source-image")

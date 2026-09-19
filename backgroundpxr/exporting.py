@@ -25,6 +25,20 @@ def _safe_suffix(suffix: str) -> str:
     return cleaned or "_pxr"
 
 
+def _output_exists(path: str | Path) -> bool:
+    """Check whether an output name is already occupied, Windows-style."""
+    candidate = Path(path)
+    if candidate.exists():
+        return True
+    if os.name == "nt":
+        return False
+    try:
+        expected = candidate.name.casefold()
+        return any(entry.name.casefold() == expected for entry in candidate.parent.iterdir())
+    except OSError:
+        return False
+
+
 def reserve_output_path(
     source: str | Path,
     output_dir: str | Path,
@@ -36,9 +50,9 @@ def reserve_output_path(
 
     Invalid-only suffixes fall back to ``_pxr`` so an export can never collapse
     to the source filename when the output directory is the source directory.
-    Within batch export, same-stem inputs receive numbered names rather than
-    silently overwriting an earlier result. Comparison is case-insensitive to
-    match Windows filesystem behaviour.
+    Existing exports and same-stem inputs receive numbered names rather than
+    being silently overwritten. Comparison is case-insensitive to match Windows
+    filesystem behaviour.
     """
     base = output_path_for(source, output_dir, export_format, _safe_suffix(suffix))
     source_key = _output_key(source)
@@ -46,15 +60,17 @@ def reserve_output_path(
         # Defensive fallback for future output-format/suffix changes.
         base = output_path_for(source, output_dir, export_format, "_pxr")
 
-    if reserved is None:
-        return base
-
     candidate = base
     counter = 2
-    while _output_key(candidate) in reserved:
+    while (
+        _output_key(candidate) == source_key
+        or (reserved is not None and _output_key(candidate) in reserved)
+        or _output_exists(candidate)
+    ):
         candidate = base.with_name(f"{base.stem}_{counter}{base.suffix}")
         counter += 1
-    reserved.add(_output_key(candidate))
+    if reserved is not None:
+        reserved.add(_output_key(candidate))
     return candidate
 
 
