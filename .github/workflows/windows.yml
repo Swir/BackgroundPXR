@@ -24,8 +24,18 @@ jobs:
         run: python -m pytest -q
       - name: Verify SWIR progress assets
         run: python tools/readme_progress.py --check
-      - name: GUI startup smoke test
+      - name: GUI acceptance 1600x900
         run: python tests/smoke_ui.py
+      - name: GUI resize and HiDPI acceptance matrix
+        shell: pwsh
+        run: |
+          $sizes = @('1536x864', '1440x900', '1366x768', '1280x720')
+          foreach ($size in $sizes) {
+            Write-Host "--- BackgroundPXR UI acceptance: $size ---"
+            $env:PXR_SMOKE_SIZE = $size
+            python tests/smoke_ui.py
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
 
   build-release:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:'))
