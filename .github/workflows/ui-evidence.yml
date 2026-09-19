@@ -1,0 +1,79 @@
+name: Windows UI visual evidence
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  capture-ui-evidence:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install UI evidence dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install "Pillow>=10.4,<13" "customtkinter>=5.2.2,<6" "tkinterdnd2>=0.4.3,<1"
+      - name: Provision 1600x900 Windows evidence desktop
+        shell: pwsh
+        run: |
+          & powershell.exe -NoLogo -NoProfile -Command @'
+          Set-DisplayResolution -Width 1600 -Height 900 -Force
+          '@
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to configure the 1600x900 UI evidence desktop.'
+          }
+
+          Add-Type @"
+          using System.Runtime.InteropServices;
+          public static class PxrEvidenceDisplayMetrics {
+              [DllImport("user32.dll")]
+              public static extern int GetSystemMetrics(int index);
+          }
+          "@
+          $actualWidth = [PxrEvidenceDisplayMetrics]::GetSystemMetrics(0)
+          $actualHeight = [PxrEvidenceDisplayMetrics]::GetSystemMetrics(1)
+          if ($actualWidth -ne 1600 -or $actualHeight -ne 900) {
+            throw "Hosted runner rejected 1600x900; actual ${actualWidth}x${actualHeight}."
+          }
+      - name: Capture 100 125 and 150 percent visual evidence
+        shell: pwsh
+        run: |
+          $matrix = @(
+            @{ Scale = '1.00'; Label = '1600x900-100' },
+            @{ Scale = '1.25'; Label = '1600x900-125' },
+            @{ Scale = '1.50'; Label = '1600x900-150' }
+          )
+          foreach ($entry in $matrix) {
+            $output = Join-Path 'ui_evidence' $entry.Label
+            python tools/capture_ui_acceptance.py `
+              --size 1600x900 `
+              --ui-scale $entry.Scale `
+              --label $entry.Label `
+              --output-dir $output
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Verify evidence package
+        shell: pwsh
+        run: |
+          $pngs = @(Get-ChildItem ui_evidence -Recurse -Filter '*.png')
+          $jsons = @(Get-ChildItem ui_evidence -Recurse -Filter '*-evidence.json')
+          $reviews = @(Get-ChildItem ui_evidence -Recurse -Filter '*-review.md')
+          Write-Host "UI evidence: $($pngs.Count) PNG, $($jsons.Count) JSON, $($reviews.Count) review files"
+          if ($pngs.Count -ne 15) { throw "Expected 15 UI screenshots, found $($pngs.Count)." }
+          if ($jsons.Count -ne 3) { throw "Expected 3 evidence manifests, found $($jsons.Count)." }
+          if ($reviews.Count -ne 3) { throw "Expected 3 review checklists, found $($reviews.Count)." }
+          foreach ($file in $pngs) {
+            if ($file.Length -lt 1024) { throw "Evidence screenshot is unexpectedly small: $($file.FullName)" }
+          }
+      - name: Upload UI acceptance evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: BackgroundPXR-ui-evidence-${{ github.sha }}
+          path: ui_evidence/
+          retention-days: 14
