@@ -44,6 +44,55 @@ def edge_inspection_image(cutout: Image.Image, edge_width: int = 2) -> Image.Ima
     return preview
 
 
+def mask_overlay_image(
+    cutout: Image.Image,
+    kept_opacity: int = 52,
+    removed_opacity: int = 92,
+    fringe_opacity: int = 155,
+) -> Image.Image:
+    """Render a non-destructive manual-edit mask overlay.
+
+    Kept pixels receive a restrained cyan tint, removed pixels a stronger
+    magenta tint, and semi-transparent edge pixels an amber tint. The preview
+    is always opaque so it remains readable over transparent areas, while the
+    source ``cutout`` is never modified.
+    """
+    rgba = cutout.convert("RGBA")
+    alpha = rgba.getchannel("A")
+
+    kept_strength = max(0, min(255, int(kept_opacity)))
+    removed_strength = max(0, min(255, int(removed_opacity)))
+    fringe_strength = max(0, min(255, int(fringe_opacity)))
+
+    preview = Image.new("RGBA", rgba.size, (24, 30, 39, 255))
+    visible_subject = rgba.copy()
+    visible_subject.putalpha(alpha)
+    preview.alpha_composite(visible_subject)
+
+    removed = ImageOps.invert(alpha).point(
+        lambda p: (p * removed_strength) // 255
+    )
+    removed_overlay = Image.new("RGBA", rgba.size, (255, 66, 150, 255))
+    removed_overlay.putalpha(removed)
+    preview.alpha_composite(removed_overlay)
+
+    kept = alpha.point(lambda p: (p * kept_strength) // 255)
+    kept_overlay = Image.new("RGBA", rgba.size, (53, 207, 255, 255))
+    kept_overlay.putalpha(kept)
+    preview.alpha_composite(kept_overlay)
+
+    fringe = alpha.point(
+        lambda p: 0 if p in (0, 255) else min(255, 2 * min(p, 255 - p))
+    )
+    if fringe.getbbox() is not None and fringe_strength:
+        fringe = fringe.point(lambda p: (p * fringe_strength) // 255)
+        fringe_overlay = Image.new("RGBA", rgba.size, (255, 190, 52, 255))
+        fringe_overlay.putalpha(fringe)
+        preview.alpha_composite(fringe_overlay)
+
+    return preview
+
+
 def wipe_compare_image(
     before: Image.Image,
     after: Image.Image,
@@ -77,7 +126,10 @@ def wipe_compare_image(
     if 0 < split < result.width:
         half = max(1, int(divider_width)) // 2
         left = max(0, split - half)
-        right = min(result.width - 1, split + max(1, int(divider_width)) - half - 1)
+        right = min(
+            result.width - 1,
+            split + max(1, int(divider_width)) - half - 1,
+        )
         ImageDraw.Draw(preview).rectangle(
             (left, 0, right, result.height - 1), fill=(53, 207, 255, 255)
         )
