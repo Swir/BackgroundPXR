@@ -7,7 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backgroundpxr.studio_v043 import BackgroundPXRStudio043App
+from backgroundpxr.studio_v044 import BackgroundPXRStudio044App
 from backgroundpxr.ui import create_root
 
 
@@ -29,7 +29,7 @@ def _page_fits(page, widgets):
 def main() -> None:
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRStudio043App(root)
+    app = BackgroundPXRStudio044App(root)
 
     try:
         root.state("normal")
@@ -61,12 +61,14 @@ def main() -> None:
         app.wipe_frame,
         app.wipe_slider,
         app.wipe_value_label,
+        app.mask_overlay_switch,
         app.export_mask_btn,
     ]
     assert all(widget is not None and widget.winfo_exists() for widget in required)
     assert app._diag_percent_var.get() == "0%"
     assert app.diagnostics.path.name == "backgroundpxr.log"
     assert app._last_brush_point is None
+    assert bool(app.mask_overlay.get())
 
     # Left side remains readable on the user's 1600x900 class of display.
     assert app.left_panel.winfo_width() >= 326, (
@@ -145,6 +147,18 @@ def main() -> None:
     assert not app.wipe_frame.winfo_ismapped()
     assert app.style_presets.winfo_ismapped()
 
+    # The manual editor overlay stays in the existing compact control row and
+    # the precision cursor exposes brush size plus hardness without clipping.
+    app.tool = "restore"
+    app._after_transform = (0.0, 0.0, 1.0)
+    app._draw_brush_cursor(60, 60)
+    cursor_items = app.after_canvas.find_withtag("cursor")
+    assert len(cursor_items) >= 4
+    app.after_canvas.delete("cursor")
+    app.mask_overlay.set(False)
+    app._toggle_mask_overlay()
+    assert bool(app.mask_overlay.get())
+
     for button in (
         app.remove_btn,
         app.restore_btn,
@@ -171,6 +185,7 @@ def main() -> None:
         app.spill_strength_label,
         app.wipe_label,
         app.wipe_value_label,
+        app.mask_overlay_switch,
         app.export_title,
         app.status_label,
         app._diag_button,

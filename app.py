@@ -51,11 +51,11 @@ def main() -> None:
             report.write_text(traceback.format_exc(), encoding="utf-8")
             raise SystemExit(23)
 
-    from backgroundpxr.studio_v043 import BackgroundPXRStudio043App
+    from backgroundpxr.studio_v044 import BackgroundPXRStudio044App
     from backgroundpxr.ui import create_root
 
     root = create_root()
-    BackgroundPXRStudio043App(root)
+    BackgroundPXRStudio044App(root)
     root.mainloop()
 
 
