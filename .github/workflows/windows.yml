@@ -19,7 +19,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install "Pillow>=10.4,<13" pytest "customtkinter>=5.2.2,<6" "tkinterdnd2>=0.4.3,<1"
       - name: Syntax check
-        run: python -m compileall -q app.py backgroundpxr tests
+        run: python -m compileall -q app.py backgroundpxr tests tools
       - name: Unit tests
         run: python -m pytest -q
       - name: Verify SWIR progress assets
@@ -160,6 +160,32 @@ jobs:
           if (-not (Test-Path backgroundpxr_runtime_selftest.txt)) { throw 'BackgroundPXR bundled runtime self-test did not create a report.' }
           $selfTest = (Get-Content backgroundpxr_runtime_selftest.txt -Raw).Trim()
           if ($selfTest -ne 'OK') { throw "BackgroundPXR bundled runtime self-test did not return OK: $selfTest" }
+      - name: Assemble qualification package
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path backgroundpxr/__init__.py -Pattern '__version__ = "([^"]+)"').Matches.Groups[1].Value
+          if (-not (Test-Path RELEASE_NOTES.md)) { throw 'RELEASE_NOTES.md is required for a qualification package.' }
+          Copy-Item README.md dist/BackgroundPXR/
+          Copy-Item RELEASE_NOTES.md dist/BackgroundPXR/
+          Compress-Archive -Path dist/BackgroundPXR -DestinationPath "BackgroundPXR-$version-Windows.zip"
+          $digest = (Get-FileHash "BackgroundPXR-$version-Windows.zip" -Algorithm SHA256).Hash.ToLower()
+          "$digest  BackgroundPXR-$version-Windows.zip" | Set-Content "BackgroundPXR-$version-Windows.zip.sha256" -Encoding utf8
+          echo "QUAL_VERSION=$version" >> $env:GITHUB_ENV
+      - name: Verify qualification package
+        shell: pwsh
+        run: |
+          python tools/verify_release_package.py `
+            --archive "BackgroundPXR-$env:QUAL_VERSION-Windows.zip" `
+            --checksum "BackgroundPXR-$env:QUAL_VERSION-Windows.zip.sha256" `
+            --version "$env:QUAL_VERSION"
+      - name: Upload qualification package
+        uses: actions/upload-artifact@v4
+        with:
+          name: BackgroundPXR-qualification-${{ github.sha }}
+          path: |
+            BackgroundPXR-${{ env.QUAL_VERSION }}-Windows.zip
+            BackgroundPXR-${{ env.QUAL_VERSION }}-Windows.zip.sha256
+          retention-days: 7
 
   build-release:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:'))
@@ -219,12 +245,20 @@ jobs:
         shell: pwsh
         run: |
           $version = (Select-String -Path backgroundpxr/__init__.py -Pattern '__version__ = "([^"]+)"').Matches.Groups[1].Value
+          if (-not (Test-Path RELEASE_NOTES.md)) { throw 'RELEASE_NOTES.md is required for a release package.' }
           Copy-Item README.md dist/BackgroundPXR/
-          if (Test-Path RELEASE_NOTES.md) { Copy-Item RELEASE_NOTES.md dist/BackgroundPXR/ }
+          Copy-Item RELEASE_NOTES.md dist/BackgroundPXR/
           Compress-Archive -Path dist/BackgroundPXR -DestinationPath "BackgroundPXR-$version-Windows.zip"
           $digest = (Get-FileHash "BackgroundPXR-$version-Windows.zip" -Algorithm SHA256).Hash.ToLower()
           "$digest  BackgroundPXR-$version-Windows.zip" | Set-Content "BackgroundPXR-$version-Windows.zip.sha256" -Encoding utf8
           echo "VERSION=$version" >> $env:GITHUB_ENV
+      - name: Verify release package
+        shell: pwsh
+        run: |
+          python tools/verify_release_package.py `
+            --archive "BackgroundPXR-$env:VERSION-Windows.zip" `
+            --checksum "BackgroundPXR-$env:VERSION-Windows.zip.sha256" `
+            --version "$env:VERSION"
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
