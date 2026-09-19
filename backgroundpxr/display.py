@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+import math
 import sys
 from dataclasses import dataclass
+
+
+WINDOWS_BASE_DPI = 96.0
+TK_POINTS_PER_INCH = 72.0
+WINDOWS_TK_BASE_SCALING = WINDOWS_BASE_DPI / TK_POINTS_PER_INCH
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +65,55 @@ def plan_window(screen_width: int, screen_height: int) -> WindowPlacement:
         y=y,
         min_width=min_width,
         min_height=min_height,
+    )
+
+
+def windows_ui_scale(root, *, _platform: str | None = None) -> float:
+    """Return the effective Windows UI scale derived from Tk's DPI setting.
+
+    Tk exposes pixels-per-point via ``tk scaling``. Windows at 100% uses
+    96 DPI, which is 96/72 Tk units. Dividing by that baseline turns the value
+    into the familiar Windows display scale (1.0, 1.25, 1.5, ...).
+
+    The result is intentionally best-effort and bounded. It is used only for
+    responsive layout decisions; failures fall back to 100% so startup can
+    never be blocked by a window-manager or Tk quirk.
+    """
+    platform = sys.platform if _platform is None else _platform
+    if platform != "win32":
+        return 1.0
+
+    try:
+        tk_scale = float(root.tk.call("tk", "scaling"))
+        scale = tk_scale / WINDOWS_TK_BASE_SCALING
+    except Exception:
+        return 1.0
+
+    if not math.isfinite(scale) or scale <= 0:
+        return 1.0
+    return max(1.0, min(3.0, scale))
+
+
+def effective_ui_screen(root, *, _platform: str | None = None) -> tuple[int, int, float]:
+    """Return screen dimensions in UI-equivalent pixels plus the scale factor.
+
+    Per-monitor-aware Windows processes can see physical display pixels while
+    fonts/widgets are scaled for 125%/150% displays. Responsive decisions based
+    on the raw height alone can therefore choose a layout that is too tall.
+    This helper keeps geometry untouched and only exposes a scale-normalized
+    size for deciding whether compact controls are required.
+    """
+    scale = windows_ui_scale(root, _platform=_platform)
+    try:
+        width = max(1, int(root.winfo_screenwidth()))
+        height = max(1, int(root.winfo_screenheight()))
+    except Exception:
+        return 1, 1, scale
+
+    return (
+        max(1, int(round(width / scale))),
+        max(1, int(round(height / scale))),
+        scale,
     )
 
 
