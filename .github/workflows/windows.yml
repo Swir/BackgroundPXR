@@ -167,6 +167,11 @@ jobs:
           if (-not (Test-Path RELEASE_NOTES.md)) { throw 'RELEASE_NOTES.md is required for a qualification package.' }
           Copy-Item README.md dist/BackgroundPXR/
           Copy-Item RELEASE_NOTES.md dist/BackgroundPXR/
+          @(
+            "version=$version"
+            "source_sha=$env:GITHUB_SHA"
+            "channel=qualification"
+          ) | Set-Content dist/BackgroundPXR/BUILD_INFO.txt -Encoding utf8
           Compress-Archive -Path dist/BackgroundPXR -DestinationPath "BackgroundPXR-$version-Windows.zip"
           $digest = (Get-FileHash "BackgroundPXR-$version-Windows.zip" -Algorithm SHA256).Hash.ToLower()
           "$digest  BackgroundPXR-$version-Windows.zip" | Set-Content "BackgroundPXR-$version-Windows.zip.sha256" -Encoding utf8
@@ -177,7 +182,8 @@ jobs:
           python tools/verify_release_package.py `
             --archive "BackgroundPXR-$env:QUAL_VERSION-Windows.zip" `
             --checksum "BackgroundPXR-$env:QUAL_VERSION-Windows.zip.sha256" `
-            --version "$env:QUAL_VERSION"
+            --version "$env:QUAL_VERSION" `
+            --source-sha "$env:GITHUB_SHA"
       - name: Upload qualification package
         uses: actions/upload-artifact@v4
         with:
@@ -188,26 +194,20 @@ jobs:
           retention-days: 7
 
   build-release:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:'))
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release:'))
     needs: test
     runs-on: windows-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Enforce 1.0+ GitHub release gate
+      - name: Enforce final 1.0+ GitHub release gate
         if: github.event_name == 'push'
         shell: pwsh
         run: |
           $versionText = (Select-String -Path backgroundpxr/__init__.py -Pattern '__version__ = "([^"]+)"').Matches.Groups[1].Value
-          try {
-            $releaseVersion = [version]$versionText
-          } catch {
-            throw "Refusing release: invalid BackgroundPXR version '$versionText'."
-          }
-          if ($releaseVersion.Major -lt 1) {
-            throw "Refusing pre-1.0 GitHub release for BackgroundPXR $versionText. Complete the 1.0 quality gates first."
-          }
+          python tools/release_policy.py --version "$versionText" --minimum-major 1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -248,6 +248,12 @@ jobs:
           if (-not (Test-Path RELEASE_NOTES.md)) { throw 'RELEASE_NOTES.md is required for a release package.' }
           Copy-Item README.md dist/BackgroundPXR/
           Copy-Item RELEASE_NOTES.md dist/BackgroundPXR/
+          $channel = if ($env:GITHUB_EVENT_NAME -eq 'push') { 'release' } else { 'qualification' }
+          @(
+            "version=$version"
+            "source_sha=$env:GITHUB_SHA"
+            "channel=$channel"
+          ) | Set-Content dist/BackgroundPXR/BUILD_INFO.txt -Encoding utf8
           Compress-Archive -Path dist/BackgroundPXR -DestinationPath "BackgroundPXR-$version-Windows.zip"
           $digest = (Get-FileHash "BackgroundPXR-$version-Windows.zip" -Algorithm SHA256).Hash.ToLower()
           "$digest  BackgroundPXR-$version-Windows.zip" | Set-Content "BackgroundPXR-$version-Windows.zip.sha256" -Encoding utf8
@@ -258,7 +264,8 @@ jobs:
           python tools/verify_release_package.py `
             --archive "BackgroundPXR-$env:VERSION-Windows.zip" `
             --checksum "BackgroundPXR-$env:VERSION-Windows.zip.sha256" `
-            --version "$env:VERSION"
+            --version "$env:VERSION" `
+            --source-sha "$env:GITHUB_SHA"
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -267,7 +274,7 @@ jobs:
             BackgroundPXR-${{ env.VERSION }}-Windows.zip
             BackgroundPXR-${{ env.VERSION }}-Windows.zip.sha256
       - name: Publish GitHub Release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}

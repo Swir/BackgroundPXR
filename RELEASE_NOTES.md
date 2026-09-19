@@ -1,3 +1,25 @@
+# BackgroundPXR 1.0.0rc1 — 1.0 Release Candidate
+
+> Qualification candidate only. This is **not** a public GitHub Release; v0.4.0 remains the latest published version until every 1.0 quality gate is satisfied.
+
+## Candidate qualification focus
+
+- Stages the first explicit 1.0 release-candidate version for Windows package qualification.
+- Keeps the complete Studio Pro workflow: local AI cutout, Replace/Blur/Studio composition, manual Restore/Erase refinement, Undo/Redo, mask preview/export, subject transform, outline, shadow and batch export.
+- Carries the verified 1600×900 and Windows 100%/125%/150% HiDPI/resize acceptance work already completed on `main`.
+- Preserves collision-safe, atomic image/mask export and localized export-failure diagnostics.
+- Adds machine-readable `BUILD_INFO.txt` to every qualification/release ZIP with the exact package version, source commit SHA and build channel.
+- Verifies the final ZIP against its SHA-256 sidecar and exact source SHA before it can count as release evidence.
+- Hardens release policy so prerelease versions such as `1.0.0rc1` cannot be published as a final GitHub Release and release-triggered pushes are accepted only from `main`.
+
+## Remaining 1.0 gates
+
+- Complete the final functional/regression/manual-workflow acceptance gate with no known critical release-blocking defects.
+- Promote the candidate to final `1.0.0` only after the remaining gate is satisfied.
+- Publish the final Windows package, release notes and SHA-256 sidecar, then complete post-release smoke verification.
+
+---
+
 # BackgroundPXR 0.4.0 — Studio Pro
 
 ## English
