@@ -11,7 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from backgroundpxr.display import enable_windows_dpi_awareness, plan_window
-from backgroundpxr.studio_v048 import BackgroundPXRStudio048App
+from backgroundpxr.studio_v049 import BackgroundPXRStudio049App
 from backgroundpxr.ui import create_root
 
 
@@ -77,7 +77,7 @@ def main() -> None:
     dpi_status = enable_windows_dpi_awareness()
     root = create_root()
     root.withdraw()
-    app = BackgroundPXRStudio048App(root)
+    app = BackgroundPXRStudio049App(root)
 
     actual_screen = (root.winfo_screenwidth(), root.winfo_screenheight())
     assert actual_screen == (target_width, target_height), (
@@ -90,6 +90,9 @@ def main() -> None:
         f"Studio minimum does not follow desktop policy: {configured_min} != "
         f"{(placement.min_width, placement.min_height)}"
     )
+    assert app._compact_inspector == (
+        target_height <= app.COMPACT_SCREEN_HEIGHT
+    ), "Responsive inspector mode does not match desktop height"
 
     # Test the restored Studio geometry rather than the maximized state used on
     # Windows. This catches clipping at the actual startup fallback dimensions.
@@ -112,7 +115,7 @@ def main() -> None:
         f"planned={placement.width}x{placement.height} "
         f"actual={actual_width}x{actual_height} "
         f"min={configured_min[0]}x{configured_min[1]} "
-        f"dpi={dpi_status} state={root.state()}"
+        f"dpi={dpi_status} compact={app._compact_inspector} state={root.state()}"
     )
     assert abs(actual_width - placement.width) <= 2, (
         f"Unexpected test width: {actual_width} != {placement.width}"
@@ -215,6 +218,11 @@ def main() -> None:
     assert create_bottom <= create_h, (
         f"Create inspector clipped: {create_bottom}>{create_h}"
     )
+    if app._compact_inspector:
+        for subtitle in (app.manual_sub, app.subject_sub, app.style_sub):
+            assert not subtitle.winfo_ismapped(), (
+                "Secondary inspector copy should collapse on short desktops"
+            )
     _assert_inside_root(root, app.restore_btn, label="restore button")
     _assert_inside_root(root, app.erase_btn, label="erase button")
     _assert_inside_root(root, app.mask_overlay_switch, label="mask overlay switch")
