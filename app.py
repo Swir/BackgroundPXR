@@ -57,11 +57,11 @@ def main() -> None:
 
     enable_windows_dpi_awareness()
 
-    from backgroundpxr.studio_v050 import BackgroundPXRStudio050App
+    from backgroundpxr.studio_v051 import BackgroundPXRStudio051App
     from backgroundpxr.ui import create_root
 
     root = create_root()
-    BackgroundPXRStudio050App(root)
+    BackgroundPXRStudio051App(root)
     root.mainloop()
 
 
