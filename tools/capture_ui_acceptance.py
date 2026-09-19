@@ -9,6 +9,10 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from backgroundpxr import APP_NAME, __version__
 from backgroundpxr.display import (
     WINDOWS_TK_BASE_SCALING,
