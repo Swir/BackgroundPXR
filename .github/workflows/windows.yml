@@ -24,6 +24,32 @@ jobs:
         run: python -m pytest -q
       - name: Verify SWIR progress assets
         run: python tools/readme_progress.py --check
+      - name: Provision 1600x900 Windows UI desktop
+        shell: pwsh
+        run: |
+          # GitHub's hosted Windows desktop starts at 1024x768. Use the native
+          # ServerCore cmdlet so the 1600x900 gate validates a real viewport
+          # rather than silently testing a clamped window.
+          & powershell.exe -NoLogo -NoProfile -Command @'
+          Set-DisplayResolution -Width 1600 -Height 900 -Force
+          '@
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to configure the 1600x900 acceptance desktop.'
+          }
+
+          Add-Type @"
+          using System.Runtime.InteropServices;
+          public static class PxrDisplayMetrics {
+              [DllImport("user32.dll")]
+              public static extern int GetSystemMetrics(int index);
+          }
+          "@
+          $actualWidth = [PxrDisplayMetrics]::GetSystemMetrics(0)
+          $actualHeight = [PxrDisplayMetrics]::GetSystemMetrics(1)
+          Write-Host "BackgroundPXR CI desktop: ${actualWidth}x${actualHeight}"
+          if ($actualWidth -ne 1600 -or $actualHeight -ne 900) {
+            throw "Hosted runner rejected 1600x900; actual ${actualWidth}x${actualHeight}."
+          }
       - name: GUI acceptance 1600x900
         run: python tests/smoke_ui.py
       - name: GUI resize and HiDPI acceptance matrix
