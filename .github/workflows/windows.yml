@@ -10,6 +10,16 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source checkout
+        shell: pwsh
+        run: |
+          $expected = "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -ne $expected) {
+            throw "BackgroundPXR CI checkout mismatch: expected $expected, got $actual"
+          }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -127,6 +137,17 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact qualification source
+        shell: pwsh
+        run: |
+          $expected = "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -ne $expected) {
+            throw "BackgroundPXR qualification checkout mismatch: expected $expected, got $actual"
+          }
+          Write-Host "BackgroundPXR qualification source: $actual"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -181,7 +202,7 @@ jobs:
       - name: Upload qualification package
         uses: actions/upload-artifact@v4
         with:
-          name: BackgroundPXR-qualification-${{ github.sha }}
+          name: BackgroundPXR-qualification-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           path: |
             BackgroundPXR-${{ env.QUAL_VERSION }}-Windows.zip
             BackgroundPXR-${{ env.QUAL_VERSION }}-Windows.zip.sha256
