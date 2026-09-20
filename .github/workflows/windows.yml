@@ -203,6 +203,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Enforce final 1.0+ GitHub release gate
         if: github.event_name == 'push'
         shell: pwsh
@@ -219,9 +222,6 @@ jobs:
             --release-sha "$env:GITHUB_SHA" `
             --repo-root .
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - name: Install application dependencies
         shell: pwsh
         run: |
