@@ -289,3 +289,80 @@ jobs:
           } else {
             gh release create "v$env:VERSION" "BackgroundPXR-$env:VERSION-Windows.zip" "BackgroundPXR-$env:VERSION-Windows.zip.sha256" --target $env:GITHUB_SHA --title "BackgroundPXR $env:VERSION" --notes "BackgroundPXR $env:VERSION"
           }
+      - name: Verify published 1.0 release from fresh download
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v$env:VERSION"
+          $releaseTarget = (gh release view $tag --json targetCommitish --jq '.targetCommitish').Trim()
+          if ($releaseTarget -ne $env:GITHUB_SHA) {
+            throw "Published release target $releaseTarget does not match exact source $env:GITHUB_SHA."
+          }
+
+          $publishedDir = Join-Path $PWD 'published-release'
+          if (Test-Path $publishedDir) {
+            Remove-Item -Recurse -Force $publishedDir
+          }
+          New-Item -ItemType Directory -Path $publishedDir | Out-Null
+
+          gh release download $tag --dir $publishedDir --pattern "BackgroundPXR-$env:VERSION-Windows.zip*"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to download published assets for $tag."
+          }
+
+          $archive = Join-Path $publishedDir "BackgroundPXR-$env:VERSION-Windows.zip"
+          $checksum = Join-Path $publishedDir "BackgroundPXR-$env:VERSION-Windows.zip.sha256"
+          if (-not (Test-Path $archive) -or -not (Test-Path $checksum)) {
+            throw 'Published release is missing the Windows ZIP or SHA-256 sidecar.'
+          }
+
+          python tools/verify_release_package.py `
+            --archive "$archive" `
+            --checksum "$checksum" `
+            --version "$env:VERSION" `
+            --source-sha "$env:GITHUB_SHA"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $extract = Join-Path $publishedDir 'extracted'
+          Expand-Archive -Path $archive -DestinationPath $extract -Force
+          $exe = Join-Path $extract 'BackgroundPXR\BackgroundPXR.exe'
+          if (-not (Test-Path $exe)) {
+            throw 'Published ZIP does not contain BackgroundPXR.exe at the expected path.'
+          }
+
+          Push-Location $extract
+          try {
+            Remove-Item backgroundpxr_runtime_selftest.txt -ErrorAction SilentlyContinue
+            $proc = Start-Process -FilePath $exe -ArgumentList '--self-test-runtime' -Wait -PassThru
+            if ($proc.ExitCode -ne 0) {
+              throw "Published BackgroundPXR runtime self-test failed with exit code $($proc.ExitCode)."
+            }
+            if (-not (Test-Path backgroundpxr_runtime_selftest.txt)) {
+              throw 'Published BackgroundPXR self-test did not create its report.'
+            }
+            $selfTest = (Get-Content backgroundpxr_runtime_selftest.txt -Raw).Trim()
+            if ($selfTest -ne 'OK') {
+              throw "Published BackgroundPXR runtime self-test did not return OK: $selfTest"
+            }
+          } finally {
+            Pop-Location
+          }
+
+          $digest = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLower()
+          @(
+            "tag=$tag"
+            "version=$env:VERSION"
+            "source_sha=$env:GITHUB_SHA"
+            "sha256=$digest"
+            "runtime_self_test=OK"
+            "published_asset_smoke=OK"
+          ) | Set-Content post_release_smoke.txt -Encoding utf8
+      - name: Upload post-release smoke evidence
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: BackgroundPXR-post-release-smoke-${{ env.VERSION }}
+          path: post_release_smoke.txt
+          retention-days: 30
