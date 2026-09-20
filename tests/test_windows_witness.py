@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import subprocess
+import sys
 import zipfile
 from pathlib import Path
 
@@ -119,3 +121,17 @@ def test_record_result_rejects_invalid_step_and_scaling(tmp_path: Path) -> None:
         record_result(evidence, step_id=9, status="pass")
     with pytest.raises(WitnessError, match="positive"):
         record_result(evidence, scaling_percent=0)
+
+
+def test_windows_witness_cli_runs_directly_from_repo_root() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script = repo_root / "tools" / "windows_witness.py"
+    proc = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "Windows manual witness evidence" in proc.stdout
