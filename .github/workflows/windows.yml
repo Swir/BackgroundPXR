@@ -206,7 +206,11 @@ jobs:
         shell: pwsh
         run: |
           $versionText = (Select-String -Path backgroundpxr/__init__.py -Pattern '__version__ = "([^"]+)"').Matches.Groups[1].Value
-          python tools/release_policy.py --version "$versionText" --minimum-major 1
+          python tools/release_policy.py `
+            --version "$versionText" `
+            --minimum-major 1 `
+            --roadmap ROADMAP_1_0.md `
+            --release-notes RELEASE_NOTES.md
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/setup-python@v5
         with:
