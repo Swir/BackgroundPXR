@@ -27,6 +27,47 @@ Run these steps from the exact qualification ZIP that will be promoted to 1.0:
 7. Switch between English and Polish and confirm the main import/process/manual/export workflow remains understandable and controls are not clipped at the tested Windows scaling.
 8. Open diagnostics/log access and confirm a failure can be identified without exposing unrelated private paths or breaking the session.
 
+
+## Witness recorder
+
+Use `tools/windows_witness.py` to bind the manual evidence to the exact qualification
+ZIP instead of maintaining an unstructured checklist.
+
+Initialize the record from the qualification package:
+
+```powershell
+python tools/windows_witness.py init `
+  --archive .\BackgroundPXR-1.0.0rc1-Windows.zip `
+  --checksum .\BackgroundPXR-1.0.0rc1-Windows.zip.sha256 `
+  --output .\backgroundpxr-1.0-witness.json
+```
+
+Record the AI model and display scaling actually used:
+
+```powershell
+python tools/windows_witness.py record --evidence .\backgroundpxr-1.0-witness.json --model u2net --scaling-percent 125
+```
+
+After physically completing each numbered manual step, record the observed result.
+A `pass` entry is a human witness statement, not an automated substitute:
+
+```powershell
+python tools/windows_witness.py record --evidence .\backgroundpxr-1.0-witness.json --step 1 --status pass --notes "Startup and branding verified"
+```
+
+Repeat for steps 1–8, then verify that the evidence still matches the exact ZIP,
+checksum, version and source SHA and that every manual step is explicitly `pass`:
+
+```powershell
+python tools/windows_witness.py verify `
+  --evidence .\backgroundpxr-1.0-witness.json `
+  --archive .\BackgroundPXR-1.0.0rc1-Windows.zip `
+  --checksum .\BackgroundPXR-1.0.0rc1-Windows.zip.sha256
+```
+
+Do not mark roadmap item 9 complete merely because the recorder verifies its structure.
+The eight UI/runtime observations still have to be performed by a human on Windows.
+
 ## Evidence record
 
 Record the following with the pass:
