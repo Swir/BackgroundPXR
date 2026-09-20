@@ -277,7 +277,7 @@ jobs:
           path: |
             BackgroundPXR-${{ env.VERSION }}-Windows.zip
             BackgroundPXR-${{ env.VERSION }}-Windows.zip.sha256
-      - name: Publish GitHub Release
+      - name: Create draft GitHub Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: pwsh
         env:
@@ -285,9 +285,59 @@ jobs:
         run: |
           $notes = if (Test-Path RELEASE_NOTES.md) { 'RELEASE_NOTES.md' } else { $null }
           if ($notes) {
-            gh release create "v$env:VERSION" "BackgroundPXR-$env:VERSION-Windows.zip" "BackgroundPXR-$env:VERSION-Windows.zip.sha256" --target $env:GITHUB_SHA --title "BackgroundPXR $env:VERSION" --notes-file RELEASE_NOTES.md
+            gh release create "v$env:VERSION" "BackgroundPXR-$env:VERSION-Windows.zip" "BackgroundPXR-$env:VERSION-Windows.zip.sha256" --draft --target $env:GITHUB_SHA --title "BackgroundPXR $env:VERSION" --notes-file RELEASE_NOTES.md
           } else {
-            gh release create "v$env:VERSION" "BackgroundPXR-$env:VERSION-Windows.zip" "BackgroundPXR-$env:VERSION-Windows.zip.sha256" --target $env:GITHUB_SHA --title "BackgroundPXR $env:VERSION" --notes "BackgroundPXR $env:VERSION"
+            gh release create "v$env:VERSION" "BackgroundPXR-$env:VERSION-Windows.zip" "BackgroundPXR-$env:VERSION-Windows.zip.sha256" --draft --target $env:GITHUB_SHA --title "BackgroundPXR $env:VERSION" --notes "BackgroundPXR $env:VERSION"
+          }
+      - name: Verify draft release assets before publication
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v$env:VERSION"
+          $draftState = (gh release view $tag --json isDraft --jq '.isDraft').Trim()
+          if ($draftState -ne 'true') {
+            throw "Expected $tag to remain a draft during remote asset qualification."
+          }
+
+          $releaseTarget = (gh release view $tag --json targetCommitish --jq '.targetCommitish').Trim()
+          if ($releaseTarget -ne $env:GITHUB_SHA) {
+            throw "Draft release target $releaseTarget does not match exact source $env:GITHUB_SHA."
+          }
+
+          $draftDir = Join-Path $PWD 'draft-release'
+          if (Test-Path $draftDir) {
+            Remove-Item -Recurse -Force $draftDir
+          }
+          New-Item -ItemType Directory -Path $draftDir | Out-Null
+          gh release download $tag --dir $draftDir --pattern "BackgroundPXR-$env:VERSION-Windows.zip*"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to download draft assets for $tag."
+          }
+
+          $archive = Join-Path $draftDir "BackgroundPXR-$env:VERSION-Windows.zip"
+          $checksum = Join-Path $draftDir "BackgroundPXR-$env:VERSION-Windows.zip.sha256"
+          python tools/verify_release_package.py `
+            --archive "$archive" `
+            --checksum "$checksum" `
+            --version "$env:VERSION" `
+            --source-sha "$env:GITHUB_SHA"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Publish verified GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v$env:VERSION"
+          gh release edit $tag --draft=false
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to publish verified release $tag."
+          }
+          $draftState = (gh release view $tag --json isDraft --jq '.isDraft').Trim()
+          if ($draftState -ne 'false') {
+            throw "Release $tag is still a draft after publication."
           }
       - name: Verify published 1.0 release from fresh download
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -296,6 +346,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = "v$env:VERSION"
+          $draftState = (gh release view $tag --json isDraft --jq '.isDraft').Trim()
+          if ($draftState -ne 'false') {
+            throw "Published release $tag unexpectedly reports draft state $draftState."
+          }
+
           $releaseTarget = (gh release view $tag --json targetCommitish --jq '.targetCommitish').Trim()
           if ($releaseTarget -ne $env:GITHUB_SHA) {
             throw "Published release target $releaseTarget does not match exact source $env:GITHUB_SHA."
