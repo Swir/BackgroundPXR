@@ -9,8 +9,8 @@ class ReleasePolicyError(RuntimeError):
     """Raised when a version is not eligible for a public BackgroundPXR release."""
 
 
-_FINAL_VERSION_RE = re.compile(r"^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$")
-_ROADMAP_ITEM_RE = re.compile(r"^- \\[(?P<state>[ xX])\\]\\s+", re.MULTILINE)
+_FINAL_VERSION_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
+_ROADMAP_ITEM_RE = re.compile(r"^- \[(?P<state>[ xX])\]\s+", re.MULTILINE)
 
 
 def validate_final_release_version(
@@ -59,7 +59,7 @@ def _validate_1_0_roadmap(roadmap_text: str) -> None:
 
 def _validate_release_notes(version: str, release_notes_text: str) -> None:
     heading = re.compile(
-        rf"^# BackgroundPXR {re.escape(version)}(?:\\s|$)",
+        rf"^# BackgroundPXR {re.escape(version)}(?:\s|$)",
         re.MULTILINE,
     )
     if not heading.search(release_notes_text):
