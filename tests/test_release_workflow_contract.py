@@ -63,3 +63,19 @@ def test_post_release_smoke_is_publication_only_and_records_evidence() -> None:
     assert '"published_asset_smoke=OK"' in tail
     assert "post_release_smoke.txt" in tail
     assert "retention-days: 30" in tail
+
+
+def test_final_release_requires_manual_rc_promotion_integrity() -> None:
+    workflow = _workflow_text()
+    build_release = workflow.index("  build-release:")
+    create_draft = workflow.index("- name: Create draft GitHub Release")
+    gate_slice = workflow[build_release:create_draft]
+
+    assert "fetch-depth: 0" in gate_slice
+    assert "python tools/verify_promotion.py" in gate_slice
+    assert "--witness docs/acceptance/final-functional-witness.json" in gate_slice
+    assert '--release-sha "$env:GITHUB_SHA"' in gate_slice
+    assert "python tools/release_policy.py" in gate_slice
+    assert gate_slice.index("python tools/release_policy.py") < gate_slice.index(
+        "python tools/verify_promotion.py"
+    )
