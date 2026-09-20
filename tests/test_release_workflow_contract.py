@@ -72,6 +72,10 @@ def test_final_release_requires_manual_rc_promotion_integrity() -> None:
     gate_slice = workflow[build_release:create_draft]
 
     assert "fetch-depth: 0" in gate_slice
+    assert "uses: actions/setup-python@v5" in gate_slice
+    assert gate_slice.index("uses: actions/setup-python@v5") < gate_slice.index(
+        "python tools/release_policy.py"
+    )
     assert "python tools/verify_promotion.py" in gate_slice
     assert "--witness docs/acceptance/final-functional-witness.json" in gate_slice
     assert '--release-sha "$env:GITHUB_SHA"' in gate_slice
