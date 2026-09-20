@@ -201,6 +201,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Enforce final 1.0+ GitHub release gate
         if: github.event_name == 'push'
         shell: pwsh
@@ -211,6 +213,11 @@ jobs:
             --minimum-major 1 `
             --roadmap ROADMAP_1_0.md `
             --release-notes RELEASE_NOTES.md
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/verify_promotion.py `
+            --witness docs/acceptance/final-functional-witness.json `
+            --release-sha "$env:GITHUB_SHA" `
+            --repo-root .
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/setup-python@v5
         with:
