@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "candidate": {
+    "version": "1.0.0rc1",
+    "source_sha": "6c81a0b15143269fcede495a8c6015ffa23336bd",
+    "channel": "qualification",
+    "archive": "BackgroundPXR-1.0.0rc1-HOTFIX-MemoryFix-Windows.zip",
+    "sha256": "4f4bb3a5a03f869b8d4c67dae56b90d11e56367528e71afa9ac6209d6f7d9327"
+  },
+  "policy_head_sha": "e42e4c205e0d7f1a9c89bff8a00f27b2c5aea529",
+  "manual_attestation": {
+    "status": "pass",
+    "platform": "Windows",
+    "observed_path": "High Quality v2 + alpha matting",
+    "statement": "Project owner confirmed the corrected Windows High Quality v2 + alpha matting package works after the MemoryError hotfix.",
+    "date": "2026-09-21"
+  }
+}

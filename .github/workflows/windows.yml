@@ -194,12 +194,84 @@ jobs:
             BackgroundPXR-${{ env.QUAL_VERSION }}-Windows.zip.sha256
           retention-days: 7
 
+
+  real-ai-smoke:
+    # Release-grade external AI smoke: exercise the same High Quality v2 +
+    # alpha-matting path that previously exposed the Windows memory regression.
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Cache rembg model
+        uses: actions/cache@v4
+        with:
+          path: ~/.u2net
+          key: backgroundpxr-${{ runner.os }}-birefnet-general-v1
+      - name: Install real AI smoke dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run real High Quality v2 alpha-matting smoke
+        shell: pwsh
+        run: |
+          @'
+          from pathlib import Path
+          from PIL import Image, ImageDraw
+          from backgroundpxr.engine import BackgroundEngine, ProcessOptions
+
+          image = Image.new("RGB", (640, 480), "white")
+          draw = ImageDraw.Draw(image)
+          draw.ellipse((170, 70, 470, 410), fill=(35, 105, 215))
+          draw.rectangle((255, 165, 385, 390), fill=(235, 70, 55))
+
+          engine = BackgroundEngine()
+          options = ProcessOptions(model_label="High Quality v2", alpha_matting=True)
+          result = engine.remove_background(image, options)
+
+          if result.mode != "RGBA":
+              raise SystemExit(f"Expected RGBA output, got {result.mode}")
+          if result.size != image.size:
+              raise SystemExit(f"Expected {image.size} output, got {result.size}")
+          if not engine.last_remove_used_alpha_matting:
+              raise SystemExit(
+                  "High Quality v2 completed without the required alpha-matting path: "
+                  + str(engine.last_remove_notice)
+              )
+
+          Path("real_ai_smoke.txt").write_text(
+              "source_sha=__GITHUB_SHA__\n"
+              "model=High Quality v2\n"
+              "rembg_model=birefnet-general\n"
+              "alpha_matting=OK\n"
+              "output_mode=RGBA\n"
+              "output_size=640x480\n"
+              "result=OK\n",
+              encoding="utf-8",
+          )
+          print("BackgroundPXR real AI smoke: OK")
+          '@ | python -
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          (Get-Content real_ai_smoke.txt -Raw).Replace('__GITHUB_SHA__', $env:GITHUB_SHA) |
+            Set-Content real_ai_smoke.txt -Encoding utf8
+          Get-Content real_ai_smoke.txt
+      - name: Upload real AI smoke evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: BackgroundPXR-real-ai-smoke-${{ github.sha }}
+          path: real_ai_smoke.txt
+          retention-days: 30
+
   build-release:
     # Public publication is deliberately opt-in. Prefix only the final,
     # metadata-only promotion commit with "publish-release:" after the exact RC
     # witness is green; ordinary release-prep commits must remain qualification runs.
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'publish-release:'))
-    needs: test
+    needs: [test, real-ai-smoke]
     runs-on: windows-latest
     permissions:
       contents: write
