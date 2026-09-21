@@ -96,15 +96,26 @@ def test_witness_kit_is_bound_to_successful_exact_main_qualification() -> None:
     workflow = _witness_workflow_text()
 
     assert "pull_request:" in workflow
-    assert 'workflows: ["Windows build & release"]' in workflow
+    assert "workflow_run:" in workflow
+    assert "- Windows build & release" in workflow
     assert "github.event_name == 'workflow_run'" in workflow
     assert "github.event.workflow_run.conclusion == 'success'" in workflow
     assert "github.event.workflow_run.head_branch == 'main'" in workflow
     assert "github.event.workflow_run.event == 'push'" in workflow
-    assert "! startsWith(github.event.workflow_run.head_commit.message, 'release:')" in workflow
+    assert "listWorkflowRunArtifacts" in workflow
+    assert "BackgroundPXR-qualification-${run.head_sha}" in workflow
+    assert "core.setOutput('found', artifact ? 'true' : 'false')" in workflow
     assert "ref: ${{ github.event.workflow_run.head_sha }}" in workflow
-    assert "BackgroundPXR-qualification-${{ github.event.workflow_run.head_sha }}" in workflow
     assert "run-id: ${{ github.event.workflow_run.id }}" in workflow
+
+
+def test_witness_kit_skips_runs_without_qualification_artifact() -> None:
+    workflow = _witness_workflow_text()
+    kit_job = workflow.index("  build-witness-kit:")
+    kit_workflow = workflow[kit_job:]
+
+    assert "No qualification artifact" in kit_workflow
+    assert kit_workflow.count("if: steps.qualification.outputs.found == 'true'") >= 7
 
 
 def test_witness_recorder_gets_frozen_pr_smoke_before_main_kit() -> None:
