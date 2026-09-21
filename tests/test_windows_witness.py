@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import subprocess
 import sys
 import zipfile
@@ -9,9 +10,12 @@ from pathlib import Path
 import pytest
 
 from tools.windows_witness import (
+    STEP_INSTRUCTIONS,
     WitnessError,
+    extract_candidate,
     new_evidence,
     record_result,
+    run_guided_witness,
     verify_evidence,
 )
 
@@ -121,6 +125,67 @@ def test_record_result_rejects_invalid_step_and_scaling(tmp_path: Path) -> None:
         record_result(evidence, step_id=9, status="pass")
     with pytest.raises(WitnessError, match="positive"):
         record_result(evidence, scaling_percent=0)
+
+
+def test_extract_candidate_returns_expected_executable(tmp_path: Path) -> None:
+    archive, _ = _package(tmp_path)
+    executable = extract_candidate(archive, tmp_path / "run")
+    assert executable == (tmp_path / "run" / "BackgroundPXR" / "BackgroundPXR.exe").resolve()
+    assert executable.read_bytes().startswith(b"MZ")
+
+
+def test_extract_candidate_rejects_path_traversal(tmp_path: Path) -> None:
+    archive = tmp_path / "unsafe.zip"
+    with zipfile.ZipFile(archive, "w") as bundle:
+        bundle.writestr("../outside.txt", b"unsafe")
+
+    with pytest.raises(WitnessError, match="unsafe path"):
+        extract_candidate(archive, tmp_path / "run")
+    assert not (tmp_path / "outside.txt").exists()
+
+
+def test_guided_witness_requires_explicit_human_pass_for_all_steps(tmp_path: Path) -> None:
+    archive, checksum = _package(tmp_path)
+    evidence_path = tmp_path / "witness.json"
+    answers = iter(value for _ in range(8) for value in ("p", "observed"))
+
+    evidence = run_guided_witness(
+        archive,
+        checksum,
+        evidence_path,
+        model="u2net",
+        scaling_percent=125,
+        launch_app=False,
+        input_fn=lambda _: next(answers),
+    )
+
+    verify_evidence(evidence, archive, checksum)
+    saved = json.loads(evidence_path.read_text(encoding="utf-8"))
+    assert [item["status"] for item in saved["steps"]] == ["pass"] * 8
+    assert [item["notes"] for item in saved["steps"]] == ["observed"] * 8
+    assert len(STEP_INSTRUCTIONS) == 8
+
+
+def test_guided_witness_stops_and_persists_first_failure(tmp_path: Path) -> None:
+    archive, checksum = _package(tmp_path)
+    evidence_path = tmp_path / "witness.json"
+    answers = iter(("f", "preview regression"))
+
+    with pytest.raises(WitnessError, match="step 1 failed"):
+        run_guided_witness(
+            archive,
+            checksum,
+            evidence_path,
+            model="u2net",
+            scaling_percent=125,
+            launch_app=False,
+            input_fn=lambda _: next(answers),
+        )
+
+    saved = json.loads(evidence_path.read_text(encoding="utf-8"))
+    assert saved["steps"][0]["status"] == "fail"
+    assert saved["steps"][0]["notes"] == "preview regression"
+    assert saved["steps"][1]["status"] == "pending"
 
 
 def test_windows_witness_cli_runs_directly_from_repo_root() -> None:
