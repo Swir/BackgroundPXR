@@ -2,9 +2,15 @@ name: Windows witness kit
 
 on:
   pull_request:
+  workflow_run:
+    workflows:
+      - Windows build & release
+    types:
+      - completed
 
 jobs:
   recorder-smoke:
+    if: github.event_name == 'pull_request'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,3 +31,11 @@ jobs:
         run: |
           & .\dist\BackgroundPXR-Witness.exe --help
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  workflow-run-probe:
+    if: github.event_name == 'workflow_run'
+    runs-on: windows-latest
+    steps:
+      - name: Probe workflow-run trigger
+        shell: pwsh
+        run: Write-Host "Witness trigger source run ${{ github.event.workflow_run.id }}"
