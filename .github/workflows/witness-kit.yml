@@ -33,11 +33,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   build-witness-kit:
-    if: >-
-      github.event_name == 'workflow_run' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.event == 'push'
+    if: github.event_name == 'workflow_run'
     runs-on: windows-latest
     permissions:
       actions: read
@@ -49,7 +45,14 @@ jobs:
         with:
           script: |
             const run = context.payload.workflow_run;
+            const eligible = run.conclusion === 'success' && run.head_branch === 'main' && run.event === 'push';
             const expected = `BackgroundPXR-qualification-${run.head_sha}`;
+            if (!eligible) {
+              core.setOutput('found', 'false');
+              core.setOutput('name', expected);
+              core.notice(`Run ${run.id} is not an eligible successful main push; witness kit skipped.`);
+              return;
+            }
             const response = await github.rest.actions.listWorkflowRunArtifacts({
               owner: context.repo.owner,
               repo: context.repo.repo,
