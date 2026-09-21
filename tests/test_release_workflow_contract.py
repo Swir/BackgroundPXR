@@ -99,6 +99,7 @@ def test_witness_kit_is_bound_to_successful_exact_main_qualification() -> None:
     assert "github.event.workflow_run.conclusion == 'success'" in workflow
     assert "github.event.workflow_run.head_branch == 'main'" in workflow
     assert "github.event.workflow_run.event == 'push'" in workflow
+    assert "!startsWith(github.event.workflow_run.head_commit.message, 'release:')" in workflow
     assert "ref: ${{ github.event.workflow_run.head_sha }}" in workflow
     assert "BackgroundPXR-qualification-${{ github.event.workflow_run.head_sha }}" in workflow
     assert "run-id: ${{ github.event.workflow_run.id }}" in workflow
