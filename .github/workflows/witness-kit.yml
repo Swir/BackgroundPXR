@@ -116,3 +116,57 @@ jobs:
           if ($candidate.source_sha -ne $env:EXPECTED_SOURCE_SHA) {
             throw "Witness recorder bound evidence to $($candidate.source_sha), expected $env:EXPECTED_SOURCE_SHA."
           }
+      - name: Assemble one-click witness kit
+        if: steps.qualification.outputs.found == 'true'
+        shell: pwsh
+        env:
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          $archive = @(Get-ChildItem qualification -File -Filter 'BackgroundPXR-*-Windows.zip')[0]
+          $checksum = @(Get-ChildItem qualification -File -Filter 'BackgroundPXR-*-Windows.zip.sha256')[0]
+          $match = [regex]::Match($archive.Name, '^BackgroundPXR-(.+)-Windows\.zip$')
+          if (-not $match.Success) { throw "Cannot derive version from $($archive.Name)." }
+          $version = $match.Groups[1].Value
+          $kitDir = Join-Path $PWD 'BackgroundPXR-WitnessKit'
+          New-Item -ItemType Directory -Path $kitDir -Force | Out-Null
+          Copy-Item $archive.FullName $kitDir
+          Copy-Item $checksum.FullName $kitDir
+          Copy-Item dist/BackgroundPXR-Witness.exe $kitDir
+          Copy-Item docs/acceptance/final-functional-workflow.md (Join-Path $kitDir 'MANUAL-WITNESS.md')
+
+          $cmdLines = @(
+            '@echo off',
+            'setlocal',
+            'cd /d "%~dp0"',
+            "BackgroundPXR-Witness.exe guided --archive `"$($archive.Name)`" --checksum `"$($checksum.Name)`" --evidence `"backgroundpxr-1.0-witness.json`"",
+            'echo.',
+            'if errorlevel 1 echo Witness is incomplete or failed; the JSON evidence was preserved for diagnosis/resume.',
+            'pause'
+          )
+          $cmdLines | Set-Content (Join-Path $kitDir 'START-WITNESS.cmd') -Encoding ascii
+
+          $innerDigest = (Get-FileHash $archive.FullName -Algorithm SHA256).Hash.ToLower()
+          @(
+            "version=$version",
+            "source_sha=$env:SOURCE_SHA",
+            "qualification_run=$env:SOURCE_RUN_ID",
+            "qualification_zip=$($archive.Name)",
+            "qualification_sha256=$innerDigest",
+            'manual_gate=roadmap_item_9'
+          ) | Set-Content (Join-Path $kitDir 'WITNESS-KIT-INFO.txt') -Encoding utf8
+
+          $kitArchive = "BackgroundPXR-$version-WitnessKit.zip"
+          Compress-Archive -Path "$kitDir\*" -DestinationPath $kitArchive
+          $kitDigest = (Get-FileHash $kitArchive -Algorithm SHA256).Hash.ToLower()
+          "$kitDigest  $kitArchive" | Set-Content "$kitArchive.sha256" -Encoding utf8
+          "WITNESS_KIT=$kitArchive" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Upload witness kit
+        if: steps.qualification.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: BackgroundPXR-witness-kit-${{ github.event.workflow_run.head_sha }}
+          path: |
+            ${{ env.WITNESS_KIT }}
+            ${{ env.WITNESS_KIT }}.sha256
+          retention-days: 7
