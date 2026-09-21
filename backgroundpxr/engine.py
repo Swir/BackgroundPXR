@@ -25,6 +25,7 @@ CANVAS_PRESETS = {
     "Product 2000×2000": (2000, 2000), "Produkt 2000×2000": (2000, 2000),
 }
 BACKGROUND_CACHE_LIMIT = 4
+ALPHA_MATTING_MAX_PIXELS = 4_000_000
 
 
 @dataclass(slots=True)
@@ -74,6 +75,8 @@ class BackgroundEngine:
         self._lock = Lock()
         self._background_cache_lock = Lock()
         self._background_cache: OrderedDict[tuple[object, ...], Image.Image] = OrderedDict()
+        self.last_remove_notice: str | None = None
+        self.last_remove_used_alpha_matting = False
 
     @staticmethod
     def _runtime_import_error(exc: BaseException) -> RuntimeError:
@@ -94,6 +97,36 @@ class BackgroundEngine:
                 self._sessions[model_name] = new_session(model_name)
             return self._sessions[model_name]
 
+    @staticmethod
+    def _alpha_matting_work_image(source: Image.Image) -> tuple[Image.Image, bool]:
+        """Return a bounded working image for memory-intensive closed-form matting.
+
+        rembg's alpha-matting stage runs at the supplied image resolution and
+        pymatting can allocate several large sparse-matrix buffers. Multi-megapixel
+        originals can therefore require gigabytes of contiguous RAM even though the
+        segmentation model itself is happy. Keep the expensive matting stage bounded
+        while restoring the resulting alpha mask to the original output resolution.
+        """
+        pixels = max(1, source.width * source.height)
+        if pixels <= ALPHA_MATTING_MAX_PIXELS:
+            return source, False
+
+        scale = (ALPHA_MATTING_MAX_PIXELS / pixels) ** 0.5
+        width = max(1, round(source.width * scale))
+        height = max(1, round(source.height * scale))
+        return source.resize((width, height), Image.Resampling.LANCZOS), True
+
+    @staticmethod
+    def _restore_alpha_resolution(source: Image.Image, cutout: Image.Image) -> Image.Image:
+        rgba = cutout.convert("RGBA")
+        if rgba.size == source.size:
+            return rgba
+
+        alpha = rgba.getchannel("A").resize(source.size, Image.Resampling.LANCZOS)
+        restored = source.copy()
+        restored.putalpha(alpha)
+        return restored
+
     def remove_background(self, image: Image.Image, options: ProcessOptions) -> Image.Image:
         try:
             from rembg import remove
@@ -101,20 +134,68 @@ class BackgroundEngine:
             raise self._runtime_import_error(exc) from exc
 
         source = ImageOps.exif_transpose(image).convert("RGBA")
-        kwargs = dict(session=self._get_session(options.model_label), post_process_mask=True)
-        if options.alpha_matting:
-            kwargs.update(
+        session = self._get_session(options.model_label)
+        base_kwargs = dict(session=session, post_process_mask=True)
+        self.last_remove_notice = None
+        self.last_remove_used_alpha_matting = False
+
+        if not options.alpha_matting:
+            try:
+                result = remove(source, **base_kwargs)
+            except TypeError:
+                result = remove(source, session=session)
+        else:
+            work_source, reduced_for_memory = self._alpha_matting_work_image(source)
+            alpha_kwargs = dict(
+                session=session,
+                post_process_mask=True,
                 alpha_matting=True,
                 alpha_matting_foreground_threshold=245,
                 alpha_matting_background_threshold=8,
                 alpha_matting_erode_size=8,
             )
-        try:
-            result = remove(source, **kwargs)
-        except TypeError:
-            result = remove(source, session=kwargs["session"])
+            try:
+                result = remove(work_source, **alpha_kwargs)
+                self.last_remove_used_alpha_matting = True
+                if reduced_for_memory:
+                    self.last_remove_notice = (
+                        "Alpha matting used a memory-safe working resolution "
+                        f"{work_source.width}x{work_source.height} for the "
+                        f"{source.width}x{source.height} source; the final mask "
+                        "was restored to the original resolution."
+                    )
+            except MemoryError:
+                # pymatting can request multi-gigabyte contiguous arrays. Once
+                # that happens, retry the reliable mask path rather than failing
+                # the whole image/run. The segmentation session is reused.
+                import gc
+
+                gc.collect()
+                self.last_remove_used_alpha_matting = False
+                self.last_remove_notice = (
+                    "Alpha matting exceeded available memory and was automatically "
+                    "disabled for this image. AI removal was retried with the "
+                    "memory-safe mask path at the original resolution."
+                )
+                try:
+                    result = remove(source, **base_kwargs)
+                except TypeError:
+                    result = remove(source, session=session)
+            except TypeError:
+                # Preserve compatibility with rembg builds that do not expose the
+                # alpha-matting keyword set expected by this release.
+                self.last_remove_used_alpha_matting = False
+                self.last_remove_notice = (
+                    "The bundled AI runtime did not accept alpha-matting options, "
+                    "so this image used the standard memory-safe mask path."
+                )
+                result = remove(source, session=session)
+
         if not isinstance(result, Image.Image):
             raise RuntimeError("AI engine returned an unsupported result.")
+
+        if self.last_remove_used_alpha_matting and result.size != source.size:
+            result = self._restore_alpha_resolution(source, result)
         return result.convert("RGBA")
 
     @staticmethod
