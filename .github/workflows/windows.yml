@@ -120,9 +120,10 @@ jobs:
   frozen-runtime:
     # Qualify the packaged Windows runtime on PRs and on integrated main heads.
     # Feature-branch push runs already get the fast test job, while the PR run
-    # performs the expensive PyInstaller check once. Release pushes are covered
-    # by build-release below, which runs the same self-test before publishing.
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'release:'))
+    # performs the expensive PyInstaller check once. Only an explicit
+    # publish-release: promotion push skips this duplicate qualification because
+    # build-release below runs the same self-test before publication.
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'publish-release:'))
     needs: test
     runs-on: windows-latest
     steps:
@@ -194,7 +195,10 @@ jobs:
           retention-days: 7
 
   build-release:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release:'))
+    # Public publication is deliberately opt-in. Prefix only the final,
+    # metadata-only promotion commit with "publish-release:" after the exact RC
+    # witness is green; ordinary release-prep commits must remain qualification runs.
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'publish-release:'))
     needs: test
     runs-on: windows-latest
     permissions:
