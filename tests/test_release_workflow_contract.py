@@ -95,7 +95,9 @@ def test_final_release_requires_manual_rc_promotion_integrity() -> None:
 def test_witness_kit_is_bound_to_successful_exact_main_qualification() -> None:
     workflow = _witness_workflow_text()
 
+    assert "pull_request:" in workflow
     assert 'workflows: ["Windows build & release"]' in workflow
+    assert "github.event_name == 'workflow_run'" in workflow
     assert "github.event.workflow_run.conclusion == 'success'" in workflow
     assert "github.event.workflow_run.head_branch == 'main'" in workflow
     assert "github.event.workflow_run.event == 'push'" in workflow
@@ -105,19 +107,34 @@ def test_witness_kit_is_bound_to_successful_exact_main_qualification() -> None:
     assert "run-id: ${{ github.event.workflow_run.id }}" in workflow
 
 
+def test_witness_recorder_gets_frozen_pr_smoke_before_main_kit() -> None:
+    workflow = _witness_workflow_text()
+
+    smoke_job = workflow.index("  recorder-smoke:")
+    kit_job = workflow.index("  build-witness-kit:")
+    assert smoke_job < kit_job
+    pr_slice = workflow[smoke_job:kit_job]
+    assert "github.event_name == 'pull_request'" in pr_slice
+    assert "--hidden-import tools.verify_release_package" in pr_slice
+    assert "BackgroundPXR-Witness.exe --help" in pr_slice
+
+
 def test_witness_kit_builds_and_smokes_standalone_recorder() -> None:
     workflow = _witness_workflow_text()
 
-    build = workflow.index("- name: Build standalone witness recorder")
-    smoke = workflow.index("- name: Verify standalone recorder against exact RC")
-    assemble = workflow.index("- name: Assemble one-click witness kit")
-    upload = workflow.index("- name: Upload witness kit")
+    kit_job = workflow.index("  build-witness-kit:")
+    kit_workflow = workflow[kit_job:]
+    build = kit_workflow.index("- name: Build standalone witness recorder")
+    smoke = kit_workflow.index("- name: Verify standalone recorder against exact RC")
+    assemble = kit_workflow.index("- name: Assemble one-click witness kit")
+    upload = kit_workflow.index("- name: Upload witness kit")
 
     assert build < smoke < assemble < upload
-    assert "pyinstaller --noconfirm --clean --onefile --console --name BackgroundPXR-Witness" in workflow
-    assert "BackgroundPXR-Witness.exe init" in workflow[smoke:assemble]
-    assert "candidate.source_sha" in workflow[smoke:assemble]
-    assert "BackgroundPXR-Witness.exe guided" in workflow[assemble:upload]
-    assert "START-WITNESS.cmd" in workflow[assemble:upload]
-    assert "WITNESS-KIT-INFO.txt" in workflow[assemble:upload]
-    assert "retention-days: 7" in workflow[upload:]
+    assert "--hidden-import tools.verify_release_package" in kit_workflow[build:smoke]
+    assert "--name BackgroundPXR-Witness tools/windows_witness.py" in kit_workflow[build:smoke]
+    assert "BackgroundPXR-Witness.exe init" in kit_workflow[smoke:assemble]
+    assert "candidate.source_sha" in kit_workflow[smoke:assemble]
+    assert "BackgroundPXR-Witness.exe guided" in kit_workflow[assemble:upload]
+    assert "START-WITNESS.cmd" in kit_workflow[assemble:upload]
+    assert "WITNESS-KIT-INFO.txt" in kit_workflow[assemble:upload]
+    assert "retention-days: 7" in kit_workflow[upload:]
