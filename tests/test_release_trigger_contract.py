@@ -38,5 +38,5 @@ def test_release_prep_commits_remain_qualification_runs() -> None:
 
     # A normal release-preparation title such as "release: add witness kit"
     # must not be interpreted as authorization to create/publish a GitHub Release.
-    assert "publish-release:" in release_guard
-    assert "release:'" not in release_guard
+    assert "'publish-release:'" in release_guard
+    assert "'release:'" not in release_guard
