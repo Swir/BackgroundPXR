@@ -5,9 +5,11 @@ import hashlib
 import json
 import os
 import platform
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
+from typing import Callable
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -28,6 +30,42 @@ STEP_TITLES = {
     6: "Two-image batch and partial-failure diagnostics",
     7: "English/Polish usability and unclipped controls",
     8: "Diagnostics usability and privacy sanity",
+}
+
+STEP_INSTRUCTIONS = {
+    1: (
+        "Launch BackgroundPXR.exe from the extracted qualification package. Confirm startup "
+        "has no crash or console dependency and that 'by Swir' plus github.com/Swir branding "
+        "is visible."
+    ),
+    2: (
+        "Import at least one JPG and one PNG, run normal AI removal with the model recorded "
+        "for this witness, and confirm the subject preview updates correctly."
+    ),
+    3: (
+        "Use Erase and Restore, change brush size and hardness, zoom/pan/Fit, then verify "
+        "Undo and Redo restore the expected mask states."
+    ),
+    4: (
+        "Exercise Cutout plus at least two of Replace/Blur/Studio, move/scale the subject, "
+        "enable outline and shadow, and confirm the preview stays responsive and coherent."
+    ),
+    5: (
+        "Export PNG, JPG and WebP plus a mask. Open the outputs, verify canvas/suffix and "
+        "transparency behavior, and confirm no source or existing export is overwritten silently."
+    ),
+    6: (
+        "Run a small batch with at least two images. Confirm progress/diagnostics stay usable "
+        "and one file failure is reported without crashing or losing successful outputs."
+    ),
+    7: (
+        "Switch between English and Polish. Confirm the main import/process/manual/export flow "
+        "remains understandable and controls are not clipped at the recorded Windows scaling."
+    ),
+    8: (
+        "Open diagnostics/log access and confirm a failure can be identified without exposing "
+        "unrelated private paths or breaking the session."
+    ),
 }
 
 
@@ -255,6 +293,165 @@ def verify_evidence(
             )
 
 
+def extract_candidate(archive: Path, destination: Path) -> Path:
+    """Safely extract the exact candidate and return its executable path."""
+
+    destination = destination.resolve()
+    destination.mkdir(parents=True, exist_ok=True)
+
+    try:
+        with zipfile.ZipFile(archive) as bundle:
+            for member in bundle.infolist():
+                target = (destination / member.filename).resolve()
+                try:
+                    target.relative_to(destination)
+                except ValueError as exc:
+                    raise WitnessError(
+                        f"Qualification ZIP contains an unsafe path: {member.filename}"
+                    ) from exc
+            bundle.extractall(destination)
+    except zipfile.BadZipFile as exc:
+        raise WitnessError(f"Invalid qualification ZIP: {archive}") from exc
+
+    executable = destination / "BackgroundPXR" / "BackgroundPXR.exe"
+    if not executable.is_file():
+        raise WitnessError("Extracted qualification package does not contain BackgroundPXR.exe.")
+    return executable
+
+
+def _prompt_positive_int(label: str, input_fn: Callable[[str], str]) -> int:
+    while True:
+        value = input_fn(label).strip()
+        try:
+            number = int(value)
+        except ValueError:
+            print("Enter a positive integer, for example 125.")
+            continue
+        if number > 0:
+            return number
+        print("Enter a positive integer, for example 125.")
+
+
+def run_guided_witness(
+    archive: Path,
+    checksum: Path,
+    evidence_path: Path,
+    *,
+    model: str | None = None,
+    scaling_percent: int | None = None,
+    extract_dir: Path | None = None,
+    launch_app: bool = True,
+    input_fn: Callable[[str], str] = input,
+) -> dict[str, object]:
+    """Guide a human through all eight item-9 observations without auto-passing any step."""
+
+    if evidence_path.exists():
+        evidence = load_evidence(evidence_path)
+        verify_candidate = evidence.get("candidate")
+        if not isinstance(verify_candidate, dict):
+            raise WitnessError("Existing witness evidence candidate section is missing.")
+        expected = _candidate_metadata(archive, checksum)
+        for key in ("version", "source_sha", "archive", "sha256"):
+            if verify_candidate.get(key) != expected[key]:
+                raise WitnessError(
+                    "Existing witness evidence belongs to a different qualification package."
+                )
+    else:
+        evidence = new_evidence(archive, checksum)
+        write_evidence(evidence_path, evidence)
+
+    if model is None:
+        current_model = str(evidence.get("ai_model") or "").strip()
+        if not current_model:
+            current_model = input_fn("AI model used for this manual pass: ").strip()
+            if not current_model:
+                raise WitnessError("AI model is required before guided witness can continue.")
+        model = current_model
+    record_result(evidence, model=model)
+
+    environment = evidence.get("environment")
+    if not isinstance(environment, dict):
+        raise WitnessError("Witness evidence environment section is missing.")
+    if scaling_percent is None:
+        existing_scaling = environment.get("display_scaling_percent")
+        if isinstance(existing_scaling, int) and existing_scaling > 0:
+            scaling_percent = existing_scaling
+        else:
+            detected = _detect_display_scaling_percent()
+            scaling_percent = detected or _prompt_positive_int(
+                "Windows display scaling percent (for example 125): ", input_fn
+            )
+    record_result(evidence, scaling_percent=scaling_percent)
+    write_evidence(evidence_path, evidence)
+
+    if launch_app:
+        destination = extract_dir or evidence_path.parent / "BackgroundPXR-Witness-Run"
+        executable = destination.resolve() / "BackgroundPXR" / "BackgroundPXR.exe"
+        if not executable.is_file():
+            executable = extract_candidate(archive, destination)
+        try:
+            subprocess.Popen([str(executable)], cwd=executable.parent)
+        except OSError as exc:
+            raise WitnessError(f"Could not launch qualification executable: {exc}") from exc
+        print(f"Launched exact qualification executable: {executable}")
+
+    steps = evidence.get("steps")
+    if not isinstance(steps, list):
+        raise WitnessError("Witness evidence steps section is missing.")
+
+    print("\nBackgroundPXR 1.0 guided Windows witness")
+    print("No step is auto-passed. Record only what you physically observed on this PC.\n")
+
+    for step_id in sorted(STEP_TITLES):
+        selected = next(
+            (
+                item
+                for item in steps
+                if isinstance(item, dict) and item.get("id") == step_id
+            ),
+            None,
+        )
+        if selected is None:
+            raise WitnessError(f"Witness evidence does not contain step {step_id}.")
+        if selected.get("status") == "pass":
+            print(f"Step {step_id}/8 already passed: {STEP_TITLES[step_id]}")
+            continue
+
+        print(f"\nStep {step_id}/8 — {STEP_TITLES[step_id]}")
+        print(STEP_INSTRUCTIONS[step_id])
+        while True:
+            answer = input_fn("Observed result [p]ass / [f]ail / [q]uit: ").strip().lower()
+            if answer in {"p", "pass", "f", "fail", "q", "quit"}:
+                break
+            print("Enter p, f or q.")
+
+        if answer in {"q", "quit"}:
+            write_evidence(evidence_path, evidence)
+            raise WitnessError(
+                f"Guided witness paused at step {step_id}; evidence was saved to {evidence_path}."
+            )
+
+        notes = input_fn("Notes (optional, recommended for failures): ").strip()
+        status = "pass" if answer in {"p", "pass"} else "fail"
+        record_result(
+            evidence,
+            step_id=step_id,
+            status=status,
+            notes=notes,
+        )
+        write_evidence(evidence_path, evidence)
+
+        if status == "fail":
+            raise WitnessError(
+                f"Manual witness step {step_id} failed; evidence was saved for diagnosis."
+            )
+
+    verify_evidence(evidence, archive, checksum)
+    write_evidence(evidence_path, evidence)
+    print(f"\nBackgroundPXR final Windows manual witness: OK — {evidence_path}")
+    return evidence
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Create and verify BackgroundPXR 1.0 Windows manual witness evidence."
@@ -278,6 +475,26 @@ def _parser() -> argparse.ArgumentParser:
     verify.add_argument("--evidence", required=True, type=Path)
     verify.add_argument("--archive", required=True, type=Path)
     verify.add_argument("--checksum", required=True, type=Path)
+
+    guided = sub.add_parser(
+        "guided",
+        help="Launch the exact RC and guide a human through all eight manual observations.",
+    )
+    guided.add_argument("--archive", required=True, type=Path)
+    guided.add_argument("--checksum", required=True, type=Path)
+    guided.add_argument(
+        "--evidence",
+        type=Path,
+        default=Path("backgroundpxr-1.0-witness.json"),
+    )
+    guided.add_argument("--model")
+    guided.add_argument("--scaling-percent", type=int)
+    guided.add_argument("--extract-dir", type=Path)
+    guided.add_argument(
+        "--no-launch",
+        action="store_true",
+        help="Do not extract/launch BackgroundPXR.exe; useful only when it is already running.",
+    )
     return parser
 
 
@@ -302,6 +519,18 @@ def main() -> int:
             )
             write_evidence(args.evidence, evidence)
             print(f"BackgroundPXR Windows witness updated: {args.evidence}")
+            return 0
+
+        if args.command == "guided":
+            run_guided_witness(
+                args.archive,
+                args.checksum,
+                args.evidence,
+                model=args.model,
+                scaling_percent=args.scaling_percent,
+                extract_dir=args.extract_dir,
+                launch_app=not args.no_launch,
+            )
             return 0
 
         evidence = load_evidence(args.evidence)
