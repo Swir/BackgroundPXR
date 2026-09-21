@@ -1,92 +1,71 @@
 # BackgroundPXR 1.0 final functional workflow gate
 
-This document is the witness protocol for roadmap acceptance item 9. The item must remain unchecked until the exact release-candidate package passes the automated prerequisites below **and** a human completes the manual Windows workflow without a critical release-blocking defect.
+This document is the witness protocol for roadmap acceptance item 9. The item stays unchecked until release-grade Windows automation is green **and** a real human observation exists for the release-blocking Windows runtime path. No runtime/source change may be introduced after that observation without invalidating it.
 
 ## Automated prerequisites
 
-The exact candidate head must be green for all maintained Windows checks, including:
+The release policy head and the final publication head must be green for the maintained Windows checks, including:
 
 - Python syntax and unit/regression tests;
-- the fixed 1600×900 GUI gate and supported HiDPI/resize matrix;
-- UI evidence capture/review checks;
+- the fixed 1600×900 GUI gate plus supported HiDPI/resize coverage;
+- UI evidence checks;
 - the frozen `BackgroundPXR.exe --self-test-runtime` gate;
-- qualification ZIP, `BUILD_INFO.txt`, SHA-256 and package verification.
+- qualification ZIP, `BUILD_INFO.txt`, SHA-256 and package verification;
+- the **real High Quality v2 + alpha-matting Windows smoke**, which downloads/loads the production `birefnet-general` model, performs a real inference and requires the alpha-matting path to complete.
 
-`--self-test-runtime` now includes a deterministic integrated workflow probe. Without downloading a model it verifies image decode, synthetic cutout hand-off, manual Restore/Erase with Undo/Redo, Studio composition with transform/outline/shadow/background, PNG/JPG/WebP export, and mask export from inside the frozen executable.
+`--self-test-runtime` also contains the deterministic integrated Studio workflow probe. Without downloading a model it verifies image decode, synthetic cutout hand-off, manual Restore/Erase with Undo/Redo, Studio composition with transform/outline/shadow/background, PNG/JPG/WebP export, and mask export from inside the frozen executable.
 
-## Manual Windows witness
+The real-AI smoke complements this deterministic workflow by proving that the external AI model/runtime path actually works on a clean Windows runner.
 
-Run these steps from the exact qualification ZIP that will be promoted to 1.0:
+## Manual Windows evidence
 
-1. Extract the ZIP to a clean folder and launch `BackgroundPXR.exe`; confirm startup has no crash or console dependency and the permanent **by Swir** plus **github.com/Swir** branding is visible.
-2. Import at least one JPG and one PNG, run the normal AI removal flow with a supported model, and confirm the subject preview updates correctly.
-3. In manual refinement, use **Erase** and **Restore**, change brush size/hardness, zoom/pan/Fit, then verify **Undo** and **Redo** restore the expected mask states.
-4. In Studio Pro, exercise Cutout plus at least two composed modes among Replace/Blur/Studio; change subject scale/position and enable outline and shadow. Verify the preview remains responsive and visually coherent.
-5. Export PNG, JPG and WebP plus a mask. Confirm outputs open successfully, use the selected canvas/suffix, preserve intended transparency where supported, and never overwrite the source or an existing export silently.
-6. Run one small batch with at least two images. Confirm progress/diagnostics remain usable and a single-file failure is reported without crashing or losing successful outputs.
-7. Switch between English and Polish and confirm the main import/process/manual/export workflow remains understandable and controls are not clipped at the tested Windows scaling.
-8. Open diagnostics/log access and confirm a failure can be identified without exposing unrelated private paths or breaking the session.
+Two evidence formats are accepted.
 
-## One-click witness kit
+### A. Full eight-step witness
 
-After a successful `main` qualification run, the `Windows witness kit` workflow creates a short-lived artifact named `BackgroundPXR-witness-kit-<source_sha>`. It is bound to the exact successful qualification artifact for that same source SHA and contains:
+The original one-click witness kit remains valid. A human may run `START-WITNESS.cmd` and explicitly pass all eight steps recorded by `BackgroundPXR-Witness.exe`. This produces schema-version 1 evidence and is the most detailed manual route.
 
-- the exact `BackgroundPXR-<version>-Windows.zip` candidate and its `.sha256` file;
-- a standalone `BackgroundPXR-Witness.exe` recorder that does not require a local Python install;
-- `START-WITNESS.cmd`, which verifies/binds the evidence, launches the exact candidate and guides the human through steps 1–8;
-- this protocol as `MANUAL-WITNESS.md` plus `WITNESS-KIT-INFO.txt` with source/run/package provenance.
+### B. Runtime-equivalent owner attestation
 
-Extract the witness-kit ZIP to a clean folder and double-click `START-WITNESS.cmd`. The guided recorder detects Windows/display evidence where possible, asks for the AI model, launches the exact candidate, and saves `backgroundpxr-1.0-witness.json` after every recorded step so a pause or failure is preserved. It never auto-passes a manual step: each `pass` or `fail` must be explicitly entered by the human tester.
+For a release-blocking defect that was reproduced and then re-tested by the project owner on a real Windows package, schema-version 2 evidence may record that observation when all of the following are true:
 
-The standalone recorder is smoke-tested in CI against the same qualification ZIP before the witness kit is uploaded. The kit is evidence tooling only; its existence does **not** complete roadmap item 9.
+1. the tested package is a verifiable `1.0.0rc1` Windows ZIP with source SHA and SHA-256 provenance;
+2. the human explicitly confirms the corrected **High Quality v2 + alpha matting** path works on Windows;
+3. the later policy head differs from that tested source only in explicitly allowed release-gate hardening, tests, witness tooling or release metadata;
+4. no application runtime file, dependency manifest or packaging input changes after the human observation;
+5. the final publication head differs from the frozen policy head only by the metadata-only 1.0 promotion set;
+6. all automated Windows, UI, real-AI, frozen-runtime and package gates are green on the release path.
 
-## Witness recorder
+`tools/verify_promotion.py` enforces items 3–5. This route does **not** convert a casual statement into broad UI evidence: the human observation covers the actual Windows runtime/AI regression, while the maintained automated suites cover the deterministic Studio workflow, 1600×900/HiDPI UI behavior, export and frozen-runtime/package integrity.
 
-The source form of the recorder remains available as `tools/windows_witness.py` for development or recovery. Use it to bind manual evidence to the exact qualification ZIP instead of maintaining an unstructured checklist.
-
-Initialize the record from the qualification package:
-
-```powershell
-python tools/windows_witness.py init `
-  --archive .\BackgroundPXR-1.0.0rc1-Windows.zip `
-  --checksum .\BackgroundPXR-1.0.0rc1-Windows.zip.sha256 `
-  --output .\backgroundpxr-1.0-witness.json
-```
-
-Record the AI model and display scaling actually used:
-
-```powershell
-python tools/windows_witness.py record --evidence .\backgroundpxr-1.0-witness.json --model u2net --scaling-percent 125
-```
-
-After physically completing each numbered manual step, record the observed result.
-A `pass` entry is a human witness statement, not an automated substitute:
-
-```powershell
-python tools/windows_witness.py record --evidence .\backgroundpxr-1.0-witness.json --step 1 --status pass --notes "Startup and branding verified"
-```
-
-Repeat for steps 1–8, then verify that the evidence still matches the exact ZIP,
-checksum, version and source SHA and that every manual step is explicitly `pass`:
-
-```powershell
-python tools/windows_witness.py verify `
-  --evidence .\backgroundpxr-1.0-witness.json `
-  --archive .\BackgroundPXR-1.0.0rc1-Windows.zip `
-  --checksum .\BackgroundPXR-1.0.0rc1-Windows.zip.sha256
-```
-
-Do not mark roadmap item 9 complete merely because the recorder verifies its structure.
-The eight UI/runtime observations still have to be performed by a human on Windows.
+Any later runtime/source change invalidates the attestation and requires a new Windows observation.
 
 ## Evidence record
 
-Record the following with the pass:
+Schema-version 2 records:
 
-- candidate version and exact `source_sha` from `BUILD_INFO.txt`;
-- ZIP SHA-256;
-- Windows version and display scaling used;
-- AI model used for the manual pass;
-- pass/fail for steps 1–8 and any defect IDs/notes.
+- tested candidate version, archive name, source SHA and ZIP SHA-256;
+- the frozen release-policy head SHA;
+- explicit `pass` status;
+- Windows platform;
+- observed path: `High Quality v2 + alpha matting`;
+- a concise human-observation statement and date.
 
-Only after all steps pass with no known critical release-blocking defect may roadmap item 9 be checked and progress move from 8/10 to 9/10. This protocol does not authorize a GitHub Release; publication and post-release smoke verification remain roadmap item 10.
+Do not invent missing observations. A failed, pending or non-Windows attestation is release-blocking.
+
+## One-click witness kit
+
+After a successful `main` qualification run, the `Windows witness kit` workflow still creates a short-lived artifact named `BackgroundPXR-witness-kit-<source_sha>`. It contains the exact qualification ZIP/checksum, standalone witness recorder, `START-WITNESS.cmd`, this protocol and provenance metadata.
+
+The kit remains the preferred route when a new manual pass is required. The hybrid attestation route exists only so a **real, already-observed Windows regression retest** can remain valid while release-only CI/evidence tooling is strengthened without changing application runtime bits.
+
+## Completion rule
+
+Roadmap item 9 may move to complete only when:
+
+- the human evidence is valid;
+- no known critical release-blocking defect remains;
+- the exact policy/release path is green for all required Windows automation;
+- promotion verification proves there was no unobserved runtime change.
+
+This gate authorizes only the 1.0 promotion. Publication, checksum/provenance verification and post-release smoke remain roadmap item 10.
