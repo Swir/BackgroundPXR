@@ -29,14 +29,14 @@
 | Current line | **1.0.0 — stable Studio Pro release** |
 | Platform | Windows 10 / 11 |
 | Processing | Local after the required AI model is available |
-| Release target | **v1.0.0** |
-| 1.0 acceptance progress | **90.0% — 9/10 verified items before publication/post-release smoke** |
+| Current release | **v1.0.0** |
+| 1.0 acceptance progress | **100.0% — 10/10 verified items** |
 
 <p align="center">
-  <img width="100%" src="assets/readme/progress-card.svg" alt="BackgroundPXR 1.0 acceptance progress — 90.0 percent" />
+  <img width="100%" src="assets/readme/progress-card.svg" alt="BackgroundPXR 1.0 acceptance progress — 100.0 percent" />
 </p>
 
-**1.0 acceptance progress: 90.0% (9/10).** The finite denominator is defined in [`ROADMAP_1_0.md`](ROADMAP_1_0.md). The final functional gate is verified; publication of the final package and post-release smoke verification are the only remaining acceptance item.
+**1.0 acceptance progress: 100.0% (10/10).** The finite denominator is defined in [`ROADMAP_1_0.md`](ROADMAP_1_0.md). BackgroundPXR v1.0.0 is published and the fresh-download package, checksum provenance and frozen-runtime post-release smoke verification are green.
 
 ## 🚀 Overview
 
@@ -180,7 +180,7 @@ The initial AI-model download is separate from photo processing, so an Internet 
 
 The canonical finite 1.0 acceptance scope is maintained in [`ROADMAP_1_0.md`](ROADMAP_1_0.md).
 
-**Current verified progress: 9 / 10 = 90.0%.** The percentage measures acceptance work toward 1.0; the final item is publication of the verified Windows package plus post-release smoke verification.
+**Current verified progress: 10 / 10 = 100.0%.** The 1.0 acceptance scope is complete: the public Windows release was published, its checksum/provenance verified, and a fresh-download frozen-runtime post-release smoke completed successfully.
 
 `tools/readme_progress.py` derives the card and roadmap mini directly from that checklist:
 
@@ -204,7 +204,7 @@ The Windows workflow runs on pull requests and pushes. The 1.0 path verifies:
 
 ## 📦 Releases
 
-Stable release target: **[BackgroundPXR v1.0.0](https://github.com/Swir/BackgroundPXR/releases/tag/v1.0.0)**.
+Stable release: **[BackgroundPXR v1.0.0](https://github.com/Swir/BackgroundPXR/releases/tag/v1.0.0)**.
 
 The release contains `BackgroundPXR-1.0.0-Windows.zip` and `BackgroundPXR-1.0.0-Windows.zip.sha256`.
 
