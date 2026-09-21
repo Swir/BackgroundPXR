@@ -7,7 +7,7 @@
     "archive": "BackgroundPXR-1.0.0rc1-HOTFIX-MemoryFix-Windows.zip",
     "sha256": "4f4bb3a5a03f869b8d4c67dae56b90d11e56367528e71afa9ac6209d6f7d9327"
   },
-  "policy_head_sha": "7264b9e9385d978e2c049f9782f86e3eb327a2b5",
+  "policy_head_sha": "e42e4c205e0d7f1a9c89bff8a00f27b2c5aea529",
   "manual_attestation": {
     "status": "pass",
     "platform": "Windows",
