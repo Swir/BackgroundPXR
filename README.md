@@ -11,7 +11,7 @@
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-02050A?style=for-the-badge&logo=windows11&logoColor=62E5FF)
 ![Python](https://img.shields.io/badge/Python-3.12-02050A?style=for-the-badge&logo=python&logoColor=62E5FF)
 ![Processing](https://img.shields.io/badge/Processing-Local%20AI-02050A?style=for-the-badge&logoColor=62E5FF)
-![Release](https://img.shields.io/badge/Release-v0.4.0-02050A?style=for-the-badge&logo=github&logoColor=62E5FF)
+![Release](https://img.shields.io/badge/Release-v1.0.0-02050A?style=for-the-badge&logo=github&logoColor=62E5FF)
 
 [![Author](https://img.shields.io/badge/by-Swir-0088FF?style=flat-square&logo=github)](https://github.com/Swir)
 [![Stars](https://img.shields.io/github/stars/Swir/BackgroundPXR?style=flat-square&color=0088FF)](https://github.com/Swir/BackgroundPXR/stargazers)
@@ -26,54 +26,52 @@
 
 | Item | Status |
 |---|---|
-| Current line | **1.0.0rc1 — qualification candidate, not published** |
+| Current line | **1.0.0 — stable Studio Pro release** |
 | Platform | Windows 10 / 11 |
 | Processing | Local after the required AI model is available |
-| Latest public release | [v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0) |
-| 1.0 acceptance progress | **80.0% — 8/10 verified items** |
+| Release target | **v1.0.0** |
+| 1.0 acceptance progress | **90.0% — 9/10 verified items before publication/post-release smoke** |
 
 <p align="center">
-  <img width="100%" src="assets/readme/progress-card.svg" alt="BackgroundPXR 1.0 acceptance progress — 80.0 percent" />
+  <img width="100%" src="assets/readme/progress-card.svg" alt="BackgroundPXR 1.0 acceptance progress — 90.0 percent" />
 </p>
 
-**1.0 acceptance progress: 80.0% (8/10).** The finite denominator is defined in [`ROADMAP_1_0.md`](ROADMAP_1_0.md). Release readiness remains separate and is currently **BLOCKED**.
-
-**Qualification candidate:** development builds on this branch identify as **1.0.0rc1** so the exact portable package can be qualified before the final 1.0 promotion. It is not a GitHub Release; **v0.4.0 remains the latest public release** until the remaining quality gates pass.
+**1.0 acceptance progress: 90.0% (9/10).** The finite denominator is defined in [`ROADMAP_1_0.md`](ROADMAP_1_0.md). The final functional gate is verified; publication of the final package and post-release smoke verification are the only remaining acceptance item.
 
 ## 🚀 Overview
 
-**BackgroundPXR — AI Background Studio** is a Windows desktop application for removing and editing photo backgrounds without sending each image to a BackgroundPXR cloud service. It combines AI subject masks with manual cleanup, background replacement, blur, batch processing and export presets.
+**BackgroundPXR — AI Background Studio** is a Windows desktop application for removing and editing photo backgrounds without sending each image to a BackgroundPXR cloud service. It combines local AI subject masks with manual cleanup, background replacement, blur, batch processing and Studio Pro export controls.
 
-The AI model may need to be downloaded when first used. After the required model is available, image processing is performed locally on the computer.
+The AI model may need to be downloaded on first use. After the required model is available, image processing is performed locally on the computer.
 
 ## ✨ Highlights
 
 | Feature | What it does |
 |---|---|
 | ✂️ AI Cutout | Creates a transparent subject mask using local AI processing. |
+| 🧠 Quality Modes | Fast, Quality, High Quality v2 and Portrait processing modes. |
 | 🖼️ Replace | Reuses the subject mask with a custom image or solid-color background. |
 | 🌫️ Blur | Keeps the subject sharp while blurring the original background. |
-| 💡 Studio | Produces a clean white-background result with optional soft shadow. |
-| 🖌️ Manual Cleanup | Restore / Erase brushes, zoom, pan, undo/redo and cleanup helpers for difficult edges. |
-| 🧑 Portrait & quality modes | High Quality v2, Quality, Fast and Portrait processing modes. |
-| 📦 Batch workflow | Processes one or multiple images and supports custom output folders/suffixes. |
-| 💾 Export | PNG transparency plus JPG and WebP output, with common canvas presets. |
+| 💡 Studio | Produces a clean studio-style result with optional soft shadow. |
+| 🖌️ Manual Cleanup | Restore / Erase brushes, zoom, pan, Fit, Undo/Redo and cleanup helpers. |
+| 📦 Batch Workflow | Processes one or multiple images with custom output folders and suffixes. |
+| 💾 Export | PNG transparency plus JPG/WebP output and common canvas presets. |
 | 🎯 Subject Transform | Scale and reposition the cutout without rerunning AI. |
 | ✨ Outline / Sticker | Add a customizable outline for sticker-style and social graphics. |
 | 🌑 Pro Shadow | Adjustable shadow opacity and blur for cleaner product/portrait compositions. |
-| 🎭 Mask Preview & Export | Inspect the mask on black/white mattes or export the alpha mask as PNG. |
-| 🧾 Diagnostics | Shows live processing state and records errors with tracebacks for troubleshooting. |
+| 🎭 Mask Preview & Export | Inspect the mask on black/white mattes or export the current alpha mask as PNG. |
+| 🧾 Diagnostics | Shows live processing state and records useful local error diagnostics. |
 
 ## ⚙️ Quick Start
 
 ### Recommended — Windows portable release
 
-Download [BackgroundPXR v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0), then:
+Download [BackgroundPXR v1.0.0](https://github.com/Swir/BackgroundPXR/releases/tag/v1.0.0), then:
 
-1. Download `BackgroundPXR-0.4.0-Windows.zip`.
+1. Download `BackgroundPXR-1.0.0-Windows.zip`.
 2. Extract the archive to a normal folder.
 3. Run `BackgroundPXR.exe` from the extracted application folder.
-4. Add an image, choose a Studio mode and AI quality mode.
+4. Add an image and choose a Studio mode plus AI quality mode.
 5. Review the cutout, refine difficult edges if needed, then export.
 
 The packaged Windows release does not require a separate Python installation.
@@ -97,8 +95,8 @@ An Internet connection may be needed for the first download of a required AI mod
 | Component | Current scope |
 |---|---|
 | Primary OS | Windows 10 / 11 |
-| Source runtime | Python 3.12 in the project workflow |
-| AI/runtime packages | Installed from `requirements.txt`; release checks cover the bundled `rembg` / `pymatting` / `onnxruntime` runtime path |
+| Source runtime | Python 3.12 in the maintained project workflow |
+| AI/runtime packages | Installed from `requirements.txt`; release checks cover bundled `rembg`, `pymatting` and `onnxruntime` paths |
 | GUI | CustomTkinter/Tk-based desktop interface |
 | Release packaging | PyInstaller portable folder inside a ZIP |
 
@@ -113,11 +111,11 @@ The application is designed around Windows. Repository checks do not establish a
 | **Cutout** | Transparent subject output |
 | **Replace** | Custom image or solid-color background |
 | **Blur** | Blur the original background behind the subject |
-| **Studio** | White studio-style base with optional soft shadow |
+| **Studio** | Studio-style base with optional soft shadow |
 
 ### Studio Pro inspector
 
-The Studio Pro line uses a cleaner three-page inspector: **AI / CREATE / EXPORT**. Creative controls no longer have to compete for vertical space in one long panel.
+The Studio Pro interface uses a focused three-page inspector: **AI / CREATE / EXPORT**.
 
 - scale and position the subject after AI processing;
 - add a custom-color outline / sticker border;
@@ -163,7 +161,7 @@ The Studio Pro line uses a cleaner three-page inspector: **AI / CREATE / EXPORT*
 - The editor does not require uploading source images to a BackgroundPXR server.
 - Settings and diagnostic information are stored locally.
 
-The initial AI-model download is separate from photo processing; an Internet connection can therefore still be required before a model is cached locally.
+The initial AI-model download is separate from photo processing, so an Internet connection can still be required before a model is cached locally.
 
 ## 🧠 Technology / Project Structure
 
@@ -182,7 +180,7 @@ The initial AI-model download is separate from photo processing; an Internet con
 
 The canonical finite 1.0 acceptance scope is maintained in [`ROADMAP_1_0.md`](ROADMAP_1_0.md).
 
-**Current verified progress: 8 / 10 = 80.0%.** The percentage measures acceptance work toward 1.0; it is not an AI cutout-accuracy score and does not by itself mean the Release gate has passed.
+**Current verified progress: 9 / 10 = 90.0%.** The percentage measures acceptance work toward 1.0; the final item is publication of the verified Windows package plus post-release smoke verification.
 
 `tools/readme_progress.py` derives the card and roadmap mini directly from that checklist:
 
@@ -193,18 +191,22 @@ python tools/readme_progress.py --check
 
 ## 🧪 Release Quality Checks
 
-The Windows workflow runs on pull requests and pushes. Its test job currently performs:
+The Windows workflow runs on pull requests and pushes. The 1.0 path verifies:
 
-- Python syntax compilation;
-- unit tests;
-- the fixed 1600×900 GUI acceptance gate;
-- Windows 125%/150% scaling checks and reduced-size resize/HiDPI coverage.
-
-Qualification and release builds additionally package the application, verify bundled runtime metadata, run the frozen AI-runtime self-test, create the ZIP and SHA-256 sidecar, and verify `BUILD_INFO.txt` against the exact Git commit that produced the artifact. Public release-triggered pushes are restricted to `main`, and prerelease versions such as `1.0.0rc1` are rejected by the final-release policy.
+- Python syntax and unit/regression tests;
+- the fixed **1600×900** GUI acceptance gate;
+- Windows 125%/150% scaling checks and reduced-size resize/HiDPI coverage;
+- a real Windows **High Quality v2 + alpha-matting** inference using `birefnet-general`;
+- the frozen `BackgroundPXR.exe --self-test-runtime` gate with deterministic Studio/export coverage;
+- exact-source `BUILD_INFO.txt`, ZIP verification and SHA-256 checksum provenance;
+- draft-release asset verification before publication;
+- fresh-download package and frozen-runtime smoke verification after publication.
 
 ## 📦 Releases
 
-Latest public release: **[v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0)**, published September 10, 2026. It provides `BackgroundPXR-0.4.0-Windows.zip` and its SHA-256 sidecar.
+Stable release target: **[BackgroundPXR v1.0.0](https://github.com/Swir/BackgroundPXR/releases/tag/v1.0.0)**.
+
+The release contains `BackgroundPXR-1.0.0-Windows.zip` and `BackgroundPXR-1.0.0-Windows.zip.sha256`.
 
 [**Browse all releases →**](https://github.com/Swir/BackgroundPXR/releases)
 
@@ -214,13 +216,13 @@ Latest public release: **[v0.4.0](https://github.com/Swir/BackgroundPXR/releases
 - Always inspect important exports before publishing them.
 - Model availability/downloads can affect first-run readiness.
 - A successful automated test does not guarantee a perfect cutout for every photograph.
-- The repository currently has no `LICENSE` file; this documentation migration does not change licensing terms.
+- The repository currently has no `LICENSE` file; this release does not change licensing terms.
 
 ## 🇵🇱 Polski — skrót
 
-**BackgroundPXR** to aplikacja dla Windows 10/11 do lokalnego usuwania i edycji tła zdjęć przy użyciu AI. Oferuje tryby **Wytnij / Podmień / Rozmyj / Studio**, przezroczyste PNG, własne tło lub kolor, alpha matting, ręczne narzędzia **Przywróć / Usuń**, zoom do 800%, Cofnij/Ponów, batch i eksport PNG/JPG/WebP. Po pobraniu potrzebnego modelu zdjęcia są przetwarzane lokalnie.
+**BackgroundPXR 1.0.0** to aplikacja dla Windows 10/11 do lokalnego usuwania i edycji tła zdjęć przy użyciu AI. Oferuje tryby **Wytnij / Podmień / Rozmyj / Studio**, przezroczyste PNG, własne tło lub kolor, High Quality v2 z alpha matting, ręczne narzędzia **Przywróć / Usuń**, zoom do 800%, Cofnij/Ponów, batch i eksport PNG/JPG/WebP. Po pobraniu potrzebnego modelu zdjęcia są przetwarzane lokalnie.
 
-Kandydat **1.0.0rc1** służy wyłącznie do kwalifikacji pakietu 1.0; aktualną publiczną wersją pozostaje **[BackgroundPXR v0.4.0](https://github.com/Swir/BackgroundPXR/releases/tag/v0.4.0)**.
+Pobierz stabilną wersję **[BackgroundPXR v1.0.0](https://github.com/Swir/BackgroundPXR/releases/tag/v1.0.0)**.
 
 ## 🔎 Search Keywords
 

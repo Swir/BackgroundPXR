@@ -1,22 +1,34 @@
-# BackgroundPXR 1.0.0rc1 — 1.0 Release Candidate
+# BackgroundPXR 1.0.0 — Stable Studio Pro Release
 
-> Qualification candidate only. This is **not** a public GitHub Release; v0.4.0 remains the latest published version until every 1.0 quality gate is satisfied.
+BackgroundPXR 1.0.0 is the first fully qualified **Studio Pro** release for Windows. It promotes the tested 1.0 release candidate after the final functional gate, real Windows High Quality v2 + alpha-matting verification, frozen-runtime qualification and package provenance checks passed.
 
-## Candidate qualification focus
+## Highlights
 
-- Stages the first explicit 1.0 release-candidate version for Windows package qualification.
-- Keeps the complete Studio Pro workflow: local AI cutout, Replace/Blur/Studio composition, manual Restore/Erase refinement, Undo/Redo, mask preview/export, subject transform, outline, shadow and batch export.
-- Carries the verified 1600×900 and Windows 100%/125%/150% HiDPI/resize acceptance work already completed on `main`.
-- Preserves collision-safe, atomic image/mask export and localized export-failure diagnostics.
-- Adds machine-readable `BUILD_INFO.txt` to every qualification/release ZIP with the exact package version, source commit SHA and build channel.
-- Verifies the final ZIP against its SHA-256 sidecar and exact source SHA before it can count as release evidence.
-- Hardens release policy so prerelease versions such as `1.0.0rc1` cannot be published as a final GitHub Release and release-triggered pushes are accepted only from `main`.
+- Complete local AI workflow with Fast, Quality, High Quality v2 and Portrait processing modes.
+- Memory-safe High Quality v2 + alpha-matting handling for large images, including the fix for the release-blocking `MemoryError` regression.
+- Manual Restore/Erase refinement with brush controls, zoom/pan/Fit, Undo/Redo and cleanup helpers.
+- Studio Pro composition: Cutout, Replace, Blur and Studio modes, subject scale/position, outline/sticker effects and adjustable shadow.
+- Result, black/white matte and grayscale-mask previews plus current-mask PNG export.
+- Batch processing and PNG/JPG/WebP export with canvas presets, filename suffixes and collision-safe output handling.
+- Maintained English/Polish interface foundation, local diagnostics and permanent **by Swir** + **github.com/Swir** branding.
 
-## Remaining 1.0 gates
+## Windows qualification
 
-- Complete the final functional/regression/manual-workflow acceptance gate with no known critical release-blocking defects.
-- Promote the candidate to final `1.0.0` only after the remaining gate is satisfied.
-- Publish the final Windows package, release notes and SHA-256 sidecar, then complete post-release smoke verification.
+The 1.0 release path verifies:
+
+- automated regression tests and syntax checks;
+- the fixed **1600×900** Windows UI gate;
+- 125% / 150% scaling plus reduced-size HiDPI/resize coverage;
+- real `birefnet-general` High Quality v2 inference with alpha matting on Windows;
+- the frozen `BackgroundPXR.exe --self-test-runtime` workflow, including deterministic Studio/export probes;
+- exact-source `BUILD_INFO.txt`, ZIP verification and SHA-256 checksum provenance;
+- final runtime-equivalent Windows owner attestation with no unobserved application-runtime changes after the tested package.
+
+The release workflow creates the final Windows ZIP and checksum, verifies remote draft assets before publication, publishes only after those checks pass, then downloads the public assets fresh and repeats package/runtime smoke verification.
+
+## Polski
+
+BackgroundPXR 1.0.0 to pierwsza stabilna wersja **Studio Pro** dla Windows. Zawiera lokalne usuwanie tła AI, poprawiony tryb **High Quality v2 + alpha matting**, ręczne narzędzia Przywróć/Usuń, Cofnij/Ponów, tryby Wytnij/Podmień/Rozmyj/Studio, transformację obiektu, kontur, cień, batch oraz eksport PNG/JPG/WebP i maski PNG. Wersja 1.0 przechodzi kwalifikację Windows 1600×900/HiDPI, realny test modelu AI, frozen-runtime self-test, kontrolę ZIP/SHA-256 i weryfikację po publikacji.
 
 ---
 
