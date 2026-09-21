@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
+import tools.verify_promotion as promotion_module
 from tools.verify_promotion import (
     PromotionVerificationError,
     load_witness,
@@ -195,3 +197,53 @@ def test_load_witness_accepts_json_object(tmp_path: Path) -> None:
     expected = _hybrid_witness()
     path.write_text(json.dumps(expected), encoding="utf-8")
     assert load_witness(path) == expected
+
+
+def test_missing_witness_commit_is_fetched_by_exact_sha(monkeypatch, tmp_path: Path) -> None:
+    sha = "d" * 40
+    calls: list[list[str]] = []
+    available = False
+
+    def fake_run(args, **kwargs):
+        nonlocal available
+        command = list(args)
+        calls.append(command)
+        if command[:3] == ["git", "cat-file", "-e"]:
+            return SimpleNamespace(returncode=0 if available else 1, stdout="", stderr="")
+        if command[:2] == ["git", "fetch"]:
+            assert command[-1] == sha
+            available = True
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+        raise AssertionError(f"Unexpected command: {command}")
+
+    monkeypatch.setattr(promotion_module.subprocess, "run", fake_run)
+
+    promotion_module._ensure_commit_available(sha, repo_root=tmp_path)
+
+    fetches = [call for call in calls if call[:2] == ["git", "fetch"]]
+    assert fetches == [[
+        "git",
+        "fetch",
+        "--no-tags",
+        "--no-recurse-submodules",
+        "--depth=1",
+        "origin",
+        sha,
+    ]]
+
+
+def test_unfetchable_witness_commit_blocks_promotion(monkeypatch, tmp_path: Path) -> None:
+    sha = "e" * 40
+
+    def fake_run(args, **kwargs):
+        command = list(args)
+        if command[:3] == ["git", "cat-file", "-e"]:
+            return SimpleNamespace(returncode=1, stdout="", stderr="missing")
+        if command[:2] == ["git", "fetch"]:
+            return SimpleNamespace(returncode=128, stdout="", stderr="not our ref")
+        raise AssertionError(f"Unexpected command: {command}")
+
+    monkeypatch.setattr(promotion_module.subprocess, "run", fake_run)
+
+    with pytest.raises(PromotionVerificationError, match="exact witness commit"):
+        promotion_module._ensure_commit_available(sha, repo_root=tmp_path)

@@ -223,11 +223,61 @@ def validate_promotion_changes(changed_files: list[str]) -> None:
     )
 
 
+def _commit_is_available(sha: str, *, repo_root: Path) -> bool:
+    proc = subprocess.run(
+        ["git", "cat-file", "-e", f"{sha}^{{commit}}"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return proc.returncode == 0
+
+
+def _ensure_commit_available(sha: str, *, repo_root: Path) -> None:
+    """Fetch an exact witness commit when checkout refs no longer advertise it.
+
+    GitHub Actions checks out all current branches/tags for the release job, but an
+    earlier pull-request merge commit used to build the manually tested RC may no
+    longer be reachable from those refs after a squash merge. The object still
+    exists in GitHub and can be fetched by its exact SHA. Fetch only that immutable
+    object; never substitute another commit or weaken the provenance comparison.
+    """
+    if _commit_is_available(sha, repo_root=repo_root):
+        return
+
+    proc = subprocess.run(
+        [
+            "git",
+            "fetch",
+            "--no-tags",
+            "--no-recurse-submodules",
+            "--depth=1",
+            "origin",
+            sha,
+        ],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0 or not _commit_is_available(sha, repo_root=repo_root):
+        detail = (proc.stderr or proc.stdout).strip()
+        raise PromotionVerificationError(
+            "Cannot fetch exact witness commit required for provenance verification: "
+            f"{sha}: {detail}"
+        )
+
+
 def git_changed_files(base_sha: str, release_sha: str, *, repo_root: Path) -> list[str]:
     if not _SHA_RE.fullmatch(base_sha) or not _SHA_RE.fullmatch(release_sha):
         raise PromotionVerificationError(
             "Promotion comparison requires full 40-character Git SHAs."
         )
+
+    _ensure_commit_available(base_sha, repo_root=repo_root)
+    _ensure_commit_available(release_sha, repo_root=repo_root)
+
     proc = subprocess.run(
         ["git", "diff", "--name-only", f"{base_sha}..{release_sha}"],
         cwd=repo_root,
