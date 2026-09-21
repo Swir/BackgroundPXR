@@ -27,11 +27,22 @@ Run these steps from the exact qualification ZIP that will be promoted to 1.0:
 7. Switch between English and Polish and confirm the main import/process/manual/export workflow remains understandable and controls are not clipped at the tested Windows scaling.
 8. Open diagnostics/log access and confirm a failure can be identified without exposing unrelated private paths or breaking the session.
 
+## One-click witness kit
+
+After a successful `main` qualification run, the `Windows witness kit` workflow creates a short-lived artifact named `BackgroundPXR-witness-kit-<source_sha>`. It is bound to the exact successful qualification artifact for that same source SHA and contains:
+
+- the exact `BackgroundPXR-<version>-Windows.zip` candidate and its `.sha256` file;
+- a standalone `BackgroundPXR-Witness.exe` recorder that does not require a local Python install;
+- `START-WITNESS.cmd`, which verifies/binds the evidence, launches the exact candidate and guides the human through steps 1–8;
+- this protocol as `MANUAL-WITNESS.md` plus `WITNESS-KIT-INFO.txt` with source/run/package provenance.
+
+Extract the witness-kit ZIP to a clean folder and double-click `START-WITNESS.cmd`. The guided recorder detects Windows/display evidence where possible, asks for the AI model, launches the exact candidate, and saves `backgroundpxr-1.0-witness.json` after every recorded step so a pause or failure is preserved. It never auto-passes a manual step: each `pass` or `fail` must be explicitly entered by the human tester.
+
+The standalone recorder is smoke-tested in CI against the same qualification ZIP before the witness kit is uploaded. The kit is evidence tooling only; its existence does **not** complete roadmap item 9.
 
 ## Witness recorder
 
-Use `tools/windows_witness.py` to bind the manual evidence to the exact qualification
-ZIP instead of maintaining an unstructured checklist.
+The source form of the recorder remains available as `tools/windows_witness.py` for development or recovery. Use it to bind manual evidence to the exact qualification ZIP instead of maintaining an unstructured checklist.
 
 Initialize the record from the qualification package:
 
