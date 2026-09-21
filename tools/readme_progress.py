@@ -31,6 +31,7 @@ def fmt_percent(fraction: float) -> str:
 def card_svg(completed: int, total: int, fraction: float) -> str:
     pct = fmt_percent(fraction)
     width = 1100.0 * fraction
+    status = "COMPLETE" if completed == total else "IN PROGRESS"
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="190" viewBox="0 0 1200 190" role="img" aria-labelledby="title desc">
   <title id="title">BackgroundPXR 1.0 acceptance progress — {pct}</title>
   <desc id="desc">BackgroundPXR 1.0 acceptance scope: {completed} of {total} verified items, {pct}. Release readiness is tracked separately.</desc>
@@ -47,7 +48,7 @@ def card_svg(completed: int, total: int, fraction: float) -> str:
   <text x="50" y="78" fill="#F4FAFF" font-family="Segoe UI,Arial,sans-serif" font-size="30" font-weight="800">BackgroundPXR</text>
   <text x="50" y="106" fill="#8DA8B8" font-family="Segoe UI,Arial,sans-serif" font-size="15">1.0 acceptance roadmap</text>
   <text x="1110" y="78" text-anchor="end" fill="#F4FAFF" font-family="Segoe UI,Arial,sans-serif" font-size="34" font-weight="800">{pct}</text>
-  <text x="1110" y="106" text-anchor="end" fill="#62E5FF" font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="700">IN PROGRESS</text>
+  <text x="1110" y="106" text-anchor="end" fill="#62E5FF" font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="700">{status}</text>
   <rect x="50" y="132" width="1100" height="24" rx="12" fill="#08131F" stroke="#62E5FF" stroke-opacity=".16"/>
   <rect id="progress-fill" x="50" y="132" width="{width:.3f}" height="24" rx="12" fill="url(#fill)" filter="url(#glow)" clip-path="url(#clip)"/>
   <text x="50" y="178" fill="#8DA8B8" font-family="Segoe UI,Arial,sans-serif" font-size="13">Verified: {completed} / {total}</text>
