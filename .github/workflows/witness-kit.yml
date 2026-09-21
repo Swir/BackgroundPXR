@@ -92,3 +92,27 @@ jobs:
           if (-not (Test-Path dist/BackgroundPXR-Witness.exe)) {
             throw 'Standalone BackgroundPXR-Witness.exe was not produced.'
           }
+      - name: Verify standalone recorder against exact RC
+        if: steps.qualification.outputs.found == 'true'
+        shell: pwsh
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          $archives = @(Get-ChildItem qualification -File -Filter 'BackgroundPXR-*-Windows.zip')
+          $checksums = @(Get-ChildItem qualification -File -Filter 'BackgroundPXR-*-Windows.zip.sha256')
+          if ($archives.Count -ne 1 -or $checksums.Count -ne 1) {
+            throw "Expected one RC ZIP and checksum; found $($archives.Count) ZIP(s) and $($checksums.Count) checksum(s)."
+          }
+          Remove-Item witness-smoke.json -ErrorAction SilentlyContinue
+          & .\dist\BackgroundPXR-Witness.exe init `
+            --archive $archives[0].FullName `
+            --checksum $checksums[0].FullName `
+            --output witness-smoke.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path witness-smoke.json)) {
+            throw 'Standalone witness recorder did not initialize exact-package evidence.'
+          }
+          $candidate = (Get-Content witness-smoke.json -Raw | ConvertFrom-Json).candidate
+          if ($candidate.source_sha -ne $env:EXPECTED_SOURCE_SHA) {
+            throw "Witness recorder bound evidence to $($candidate.source_sha), expected $env:EXPECTED_SOURCE_SHA."
+          }
