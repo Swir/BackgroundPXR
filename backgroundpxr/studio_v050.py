@@ -112,6 +112,14 @@ class BackgroundPXRStudio050App(BackgroundPXRStudio049App):
                 threading.Thread(target=heartbeat, daemon=True).start()
                 try:
                     ai = self.engine.remove_background(original, opts)
+                    memory_notice = getattr(self.engine, "last_remove_notice", None)
+                    if memory_notice:
+                        self.diagnostics.write(
+                            "WARN",
+                            "ai-memory",
+                            memory_notice,
+                            str(path),
+                        )
                 finally:
                     stop.set()
 
