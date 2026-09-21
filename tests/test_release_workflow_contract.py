@@ -152,3 +152,22 @@ def test_witness_kit_builds_and_smokes_standalone_recorder() -> None:
     assert "START-WITNESS.cmd" in kit_workflow[assemble:upload]
     assert "WITNESS-KIT-INFO.txt" in kit_workflow[assemble:upload]
     assert "retention-days: 7" in kit_workflow[upload:]
+
+
+def test_release_requires_real_high_quality_v2_alpha_matting_smoke() -> None:
+    workflow = _workflow_text()
+
+    real_ai = workflow.index("  real-ai-smoke:")
+    build_release = workflow.index("  build-release:")
+    assert real_ai < build_release
+
+    ai_slice = workflow[real_ai:build_release]
+    assert 'model_label="High Quality v2"' in ai_slice
+    assert "alpha_matting=True" in ai_slice
+    assert "birefnet-general" in ai_slice
+    assert "last_remove_used_alpha_matting" in ai_slice
+    assert "BackgroundPXR-real-ai-smoke-${{ github.sha }}" in ai_slice
+    assert "retention-days: 30" in ai_slice
+
+    release_slice = workflow[build_release:]
+    assert "needs: [test, real-ai-smoke]" in release_slice
