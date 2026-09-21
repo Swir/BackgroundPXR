@@ -36,7 +36,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.event == 'push' &&
-      !startsWith(github.event.workflow_run.head_commit.message, 'release:')
+      ! startsWith(github.event.workflow_run.head_commit.message, 'release:')
     runs-on: windows-latest
     permissions:
       actions: read
