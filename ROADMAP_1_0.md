@@ -3,11 +3,11 @@
 <!-- SWIR-PROGRESS-SVG-PRO:v1 -->
 
 <p align="center">
-  <img width="100%" src="assets/readme/progress-mini.svg" alt="BackgroundPXR 1.0 acceptance progress — 8 of 10 verified, 80.0 percent" />
+  <img width="100%" src="assets/readme/progress-mini.svg" alt="BackgroundPXR 1.0 acceptance progress — 9 of 10 verified, 90.0 percent" />
 </p>
 
-**1.0 acceptance progress: 8 / 10 = 80.0%.**  
-**Release readiness: BLOCKED** — the remaining two acceptance items are the final functional/regression/manual-workflow gate and final package publication/post-release smoke verification.
+**1.0 acceptance progress: 9 / 10 = 90.0%.**  
+**Release readiness: RELEASE PREP** — the final functional/regression/manual-workflow gate is verified; only publication of the final package and post-release smoke verification remain.
 
 This is the canonical finite denominator for the path to BackgroundPXR 1.0. It measures verified acceptance work, not image-cutout accuracy and not a promise of release timing.
 
@@ -21,7 +21,7 @@ This is the canonical finite denominator for the path to BackgroundPXR 1.0. It m
 - [x] The 1600×900 Windows GUI smoke gate verifies readable sidebars, unclipped inspector pages, usable controls and core Studio Pro wiring.
 - [x] Complete the dedicated HiDPI/resize/manual UX acceptance pass across the supported Windows scaling range and resolve any regressions found.
 - [x] Build and verify an exact 1.0 release-candidate portable package, including the frozen AI-runtime self-test and checksum.
-- [ ] Complete the final 1.0 functional/regression/manual-workflow gate with no known critical release-blocking defects.
+- [x] Complete the final 1.0 functional/regression/manual-workflow gate with no known critical release-blocking defects.
 - [ ] Publish the final 1.0 Windows package with release notes/checksum and complete post-release smoke verification.
 
 ## Progress rules
