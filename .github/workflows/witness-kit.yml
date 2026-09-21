@@ -63,3 +63,32 @@ jobs:
             );
             core.setOutput('found', artifact ? 'true' : 'false');
             core.setOutput('name', expected);
+      - name: Checkout exact qualified source
+        if: steps.qualification.outputs.found == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Download exact qualification artifact
+        if: steps.qualification.outputs.found == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.qualification.outputs.name }}
+          path: qualification
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Set up Python for witness recorder
+        if: steps.qualification.outputs.found == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build standalone witness recorder
+        if: steps.qualification.outputs.found == 'true'
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pyinstaller --noconfirm --clean --onefile --console --paths . --hidden-import tools.verify_release_package --name BackgroundPXR-Witness tools/windows_witness.py
+          if (-not (Test-Path dist/BackgroundPXR-Witness.exe)) {
+            throw 'Standalone BackgroundPXR-Witness.exe was not produced.'
+          }
