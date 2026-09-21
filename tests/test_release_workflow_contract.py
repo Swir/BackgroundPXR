@@ -99,9 +99,10 @@ def test_witness_kit_is_bound_to_successful_exact_main_qualification() -> None:
     assert "workflow_run:" in workflow
     assert "- Windows build & release" in workflow
     assert "github.event_name == 'workflow_run'" in workflow
-    assert "github.event.workflow_run.conclusion == 'success'" in workflow
-    assert "github.event.workflow_run.head_branch == 'main'" in workflow
-    assert "github.event.workflow_run.event == 'push'" in workflow
+    assert (
+        "run.conclusion === 'success' && run.head_branch === 'main' && run.event === 'push'"
+        in workflow
+    )
     assert "listWorkflowRunArtifacts" in workflow
     assert "BackgroundPXR-qualification-${run.head_sha}" in workflow
     assert "core.setOutput('found', artifact ? 'true' : 'false')" in workflow
@@ -109,12 +110,14 @@ def test_witness_kit_is_bound_to_successful_exact_main_qualification() -> None:
     assert "run-id: ${{ github.event.workflow_run.id }}" in workflow
 
 
-def test_witness_kit_skips_runs_without_qualification_artifact() -> None:
+def test_witness_kit_skips_ineligible_or_unqualified_runs() -> None:
     workflow = _witness_workflow_text()
     kit_job = workflow.index("  build-witness-kit:")
     kit_workflow = workflow[kit_job:]
 
-    assert "No qualification artifact" in kit_workflow
+    assert "if (!eligible)" in kit_workflow
+    assert "core.setOutput('found', 'false')" in kit_workflow
+    assert "core.setOutput('found', artifact ? 'true' : 'false')" in kit_workflow
     assert kit_workflow.count("if: steps.qualification.outputs.found == 'true'") >= 7
 
 
