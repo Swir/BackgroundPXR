@@ -10,6 +10,13 @@ def _workflow_text() -> str:
     )
 
 
+def _witness_workflow_text() -> str:
+    repo_root = Path(__file__).resolve().parents[1]
+    return (repo_root / ".github" / "workflows" / "witness-kit.yml").read_text(
+        encoding="utf-8"
+    )
+
+
 def test_release_workflow_qualifies_remote_draft_before_publication() -> None:
     workflow = _workflow_text()
 
@@ -83,3 +90,65 @@ def test_final_release_requires_manual_rc_promotion_integrity() -> None:
     assert gate_slice.index("python tools/release_policy.py") < gate_slice.index(
         "python tools/verify_promotion.py"
     )
+
+
+def test_witness_kit_is_bound_to_successful_exact_main_qualification() -> None:
+    workflow = _witness_workflow_text()
+
+    assert "pull_request:" in workflow
+    assert "workflow_run:" in workflow
+    assert "- Windows build & release" in workflow
+    assert "github.event_name == 'workflow_run'" in workflow
+    assert (
+        "run.conclusion === 'success' && run.head_branch === 'main' && run.event === 'push'"
+        in workflow
+    )
+    assert "listWorkflowRunArtifacts" in workflow
+    assert "BackgroundPXR-qualification-${run.head_sha}" in workflow
+    assert "core.setOutput('found', artifact ? 'true' : 'false')" in workflow
+    assert "ref: ${{ github.event.workflow_run.head_sha }}" in workflow
+    assert "run-id: ${{ github.event.workflow_run.id }}" in workflow
+
+
+def test_witness_kit_skips_ineligible_or_unqualified_runs() -> None:
+    workflow = _witness_workflow_text()
+    kit_job = workflow.index("  build-witness-kit:")
+    kit_workflow = workflow[kit_job:]
+
+    assert "if (!eligible)" in kit_workflow
+    assert "core.setOutput('found', 'false')" in kit_workflow
+    assert "core.setOutput('found', artifact ? 'true' : 'false')" in kit_workflow
+    assert kit_workflow.count("if: steps.qualification.outputs.found == 'true'") >= 7
+
+
+def test_witness_recorder_gets_frozen_pr_smoke_before_main_kit() -> None:
+    workflow = _witness_workflow_text()
+
+    smoke_job = workflow.index("  recorder-smoke:")
+    kit_job = workflow.index("  build-witness-kit:")
+    assert smoke_job < kit_job
+    pr_slice = workflow[smoke_job:kit_job]
+    assert "github.event_name == 'pull_request'" in pr_slice
+    assert "--hidden-import tools.verify_release_package" in pr_slice
+    assert "BackgroundPXR-Witness.exe --help" in pr_slice
+
+
+def test_witness_kit_builds_and_smokes_standalone_recorder() -> None:
+    workflow = _witness_workflow_text()
+
+    kit_job = workflow.index("  build-witness-kit:")
+    kit_workflow = workflow[kit_job:]
+    build = kit_workflow.index("- name: Build standalone witness recorder")
+    smoke = kit_workflow.index("- name: Verify standalone recorder against exact RC")
+    assemble = kit_workflow.index("- name: Assemble one-click witness kit")
+    upload = kit_workflow.index("- name: Upload witness kit")
+
+    assert build < smoke < assemble < upload
+    assert "--hidden-import tools.verify_release_package" in kit_workflow[build:smoke]
+    assert "--name BackgroundPXR-Witness tools/windows_witness.py" in kit_workflow[build:smoke]
+    assert "BackgroundPXR-Witness.exe init" in kit_workflow[smoke:assemble]
+    assert "candidate.source_sha" in kit_workflow[smoke:assemble]
+    assert "BackgroundPXR-Witness.exe guided" in kit_workflow[assemble:upload]
+    assert "START-WITNESS.cmd" in kit_workflow[assemble:upload]
+    assert "WITNESS-KIT-INFO.txt" in kit_workflow[assemble:upload]
+    assert "retention-days: 7" in kit_workflow[upload:]
