@@ -3,6 +3,8 @@ from __future__ import annotations
 import sys
 import types
 
+from unittest.mock import ANY
+
 import pytest
 from PIL import Image
 
@@ -96,7 +98,7 @@ def test_alpha_matting_disabled_never_downscales_or_sets_notice(monkeypatch) -> 
     result = engine.remove_background(source, ProcessOptions(alpha_matting=False))
 
     assert result.size == (20, 20)
-    assert calls == [((20, 20), {"session": pytest.ANY, "post_process_mask": True})]
+    assert calls == [((20, 20), {"session": ANY, "post_process_mask": True})]
     assert engine.last_remove_notice is None
     assert engine.last_remove_used_alpha_matting is False
 
