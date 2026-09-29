@@ -82,19 +82,35 @@ jobs:
       - name: Provision Inno Setup
         shell: pwsh
         run: |
-          $candidates = @(
-            "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe",
-            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
-          )
-          $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          function Find-Iscc {
+            $command = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+            if ($command) {
+              return $command.Source
+            }
+
+            $candidates = @(
+              "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+              "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+              "$env:ChocolateyInstall\bin\ISCC.exe"
+            )
+            return ($candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1)
+          }
+
+          $iscc = Find-Iscc
           if (-not $iscc) {
             choco install innosetup --no-progress -y
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+            $env:PATH = "$env:ChocolateyInstall\bin;$env:PATH"
+            $iscc = Find-Iscc
           }
           if (-not $iscc) {
+            Get-ChildItem "${env:ProgramFiles(x86)}" -Filter ISCC.exe -Recurse -ErrorAction SilentlyContinue |
+              Select-Object -First 5 -ExpandProperty FullName |
+              ForEach-Object { Write-Host "ISCC candidate: $_" }
             throw 'Inno Setup compiler ISCC.exe is unavailable.'
           }
+
+          Write-Host "Using Inno Setup compiler: $iscc"
           "ISCC=$iscc" >> $env:GITHUB_ENV
 
       - name: Build stable installer from published ZIP
