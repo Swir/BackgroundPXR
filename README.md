@@ -64,17 +64,23 @@ The AI model may need to be downloaded on first use. After the required model is
 
 ## ⚙️ Quick Start
 
-### Recommended — Windows portable release
+### Recommended — Windows installer
 
 Download [BackgroundPXR v1.0.0](https://github.com/Swir/BackgroundPXR/releases/tag/v1.0.0), then:
 
-1. Download `BackgroundPXR-1.0.0-Windows.zip`.
-2. Extract the archive to a normal folder.
-3. Run `BackgroundPXR.exe` from the extracted application folder.
+1. Download `BackgroundPXR-1.0.0-Setup.exe` and its `.sha256` sidecar.
+2. Run the installer and choose whether to add an optional Desktop shortcut.
+3. Launch **BackgroundPXR** from the Start Menu.
 4. Add an image and choose a Studio mode plus AI quality mode.
 5. Review the cutout, refine difficult edges if needed, then export.
 
-The packaged Windows release does not require a separate Python installation.
+The installer is per-user by default and does not require administrator rights. It is currently unsigned, so Windows SmartScreen may show an unknown-publisher warning; download only from the official GitHub Release and verify the SHA-256 sidecar.
+
+### Portable ZIP
+
+If you prefer a no-install build, download `BackgroundPXR-1.0.0-Windows.zip`, extract it to a normal folder, and run `BackgroundPXR.exe` from the extracted `BackgroundPXR` folder.
+
+Both Windows packages contain the same qualified v1.0.0 application runtime and do not require a separate Python installation.
 
 ### From source
 
@@ -98,7 +104,7 @@ An Internet connection may be needed for the first download of a required AI mod
 | Source runtime | Python 3.12 in the maintained project workflow |
 | AI/runtime packages | Installed from `requirements.txt`; release checks cover bundled `rembg`, `pymatting` and `onnxruntime` paths |
 | GUI | CustomTkinter/Tk-based desktop interface |
-| Release packaging | PyInstaller portable folder inside a ZIP |
+| Release packaging | Verified portable ZIP plus optional Inno Setup installer built from the same published runtime |
 
 The application is designed around Windows. Repository checks do not establish a supported packaged Linux/macOS release.
 
