@@ -26,6 +26,19 @@ The 1.0 release path verifies:
 
 The release workflow creates the final Windows ZIP and checksum, verifies remote draft assets before publication, publishes only after those checks pass, then downloads the public assets fresh and repeats package/runtime smoke verification.
 
+
+## Windows installer
+
+The stable v1.0.0 Release also includes an optional **Windows installer** built from the exact already-published and verified portable ZIP. The installer does not rebuild or replace the qualified application runtime.
+
+- Asset: `BackgroundPXR-1.0.0-Setup.exe`
+- Checksum: `BackgroundPXR-1.0.0-Setup.exe.sha256`
+- Per-user installation under `%LOCALAPPDATA%\Programs\BackgroundPXR` by default; no administrator rights required.
+- Creates a Start Menu shortcut and offers an optional Desktop shortcut.
+- Includes a standard Windows uninstaller.
+- CI performs a silent install, runs the installed `BackgroundPXR.exe --self-test-runtime`, then performs a silent uninstall before the installer is attached to the stable Release.
+- The installer is currently unsigned, so Windows SmartScreen may show an unknown-publisher warning. Verify the SHA-256 sidecar and download only from the official GitHub Release.
+
 ## Polski
 
 BackgroundPXR 1.0.0 to pierwsza stabilna wersja **Studio Pro** dla Windows. Zawiera lokalne usuwanie tła AI, poprawiony tryb **High Quality v2 + alpha matting**, ręczne narzędzia Przywróć/Usuń, Cofnij/Ponów, tryby Wytnij/Podmień/Rozmyj/Studio, transformację obiektu, kontur, cień, batch oraz eksport PNG/JPG/WebP i maski PNG. Wersja 1.0 przechodzi kwalifikację Windows 1600×900/HiDPI, realny test modelu AI, frozen-runtime self-test, kontrolę ZIP/SHA-256 i weryfikację po publikacji.
