@@ -1,0 +1,228 @@
+name: Windows stable installer
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Resolve stable version
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path backgroundpxr/__init__.py -Pattern '__version__ = "([^"]+)"').Matches.Groups[1].Value
+          if ($version -ne '1.0.0') {
+            throw "Installer qualification is pinned to stable 1.0.0, found $version."
+          }
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Download exact published stable package
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v$env:VERSION"
+          $releaseDir = Join-Path $PWD 'stable-release'
+          New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
+
+          gh release download $tag --dir $releaseDir --pattern "BackgroundPXR-$env:VERSION-Windows.zip*"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to download stable release assets for $tag."
+          }
+
+          $archive = Join-Path $releaseDir "BackgroundPXR-$env:VERSION-Windows.zip"
+          $checksum = Join-Path $releaseDir "BackgroundPXR-$env:VERSION-Windows.zip.sha256"
+          if (-not (Test-Path $archive) -or -not (Test-Path $checksum)) {
+            throw 'Stable release ZIP/checksum is missing.'
+          }
+
+          $releaseTarget = (gh release view $tag --json targetCommitish --jq '.targetCommitish').Trim()
+          if (-not $releaseTarget) {
+            throw 'Stable release target commit is missing.'
+          }
+
+          python tools/verify_release_package.py `
+            --archive "$archive" `
+            --checksum "$checksum" `
+            --version "$env:VERSION" `
+            --source-sha "$releaseTarget"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          Expand-Archive -Path $archive -DestinationPath stable-package -Force
+          $stableExe = Join-Path $PWD 'stable-package\BackgroundPXR\BackgroundPXR.exe'
+          if (-not (Test-Path $stableExe)) {
+            throw 'Stable release ZIP does not contain BackgroundPXR.exe.'
+          }
+
+          "STABLE_SOURCE_SHA=$releaseTarget" >> $env:GITHUB_ENV
+
+      - name: Generate branded installer icon
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install "Pillow>=10.4,<13"
+          python -m backgroundpxr.branding --output build_assets
+          if (-not (Test-Path build_assets\BackgroundPXR.ico)) {
+            throw 'BackgroundPXR installer icon was not generated.'
+          }
+
+      - name: Provision Inno Setup
+        shell: pwsh
+        run: |
+          $candidates = @(
+            "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          )
+          $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) {
+            choco install innosetup --no-progress -y
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          }
+          if (-not $iscc) {
+            throw 'Inno Setup compiler ISCC.exe is unavailable.'
+          }
+          "ISCC=$iscc" >> $env:GITHUB_ENV
+
+      - name: Build stable installer from published ZIP
+        shell: pwsh
+        run: |
+          $sourceDir = Join-Path $PWD 'stable-package\BackgroundPXR'
+          & "$env:ISCC" "/DMyAppVersion=$env:VERSION" "/DMySourceDir=$sourceDir" "installer\BackgroundPXR.iss"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $installer = Join-Path $PWD "installer-dist\BackgroundPXR-$env:VERSION-Setup.exe"
+          if (-not (Test-Path $installer)) {
+            throw 'Expected stable installer was not produced.'
+          }
+
+          $digest = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLower()
+          "$digest  BackgroundPXR-$env:VERSION-Setup.exe" |
+            Set-Content "installer-dist\BackgroundPXR-$env:VERSION-Setup.exe.sha256" -Encoding utf8
+
+      - name: Silent install, frozen runtime self-test and uninstall
+        shell: pwsh
+        run: |
+          $installer = Join-Path $PWD "installer-dist\BackgroundPXR-$env:VERSION-Setup.exe"
+          $installDir = Join-Path $env:RUNNER_TEMP 'BackgroundPXR-installer-smoke'
+
+          if (Test-Path $installDir) {
+            Remove-Item -Recurse -Force $installDir
+          }
+
+          $install = Start-Process -FilePath $installer -ArgumentList @(
+            '/VERYSILENT',
+            '/SUPPRESSMSGBOXES',
+            '/NORESTART',
+            "/DIR=$installDir"
+          ) -Wait -PassThru
+          if ($install.ExitCode -ne 0) {
+            throw "Installer failed with exit code $($install.ExitCode)."
+          }
+
+          $exe = Join-Path $installDir 'BackgroundPXR.exe'
+          if (-not (Test-Path $exe)) {
+            throw 'Installed BackgroundPXR.exe is missing.'
+          }
+
+          Push-Location $installDir
+          try {
+            Remove-Item backgroundpxr_runtime_selftest.txt -ErrorAction SilentlyContinue
+            $runtime = Start-Process -FilePath $exe -ArgumentList '--self-test-runtime' -Wait -PassThru
+            if ($runtime.ExitCode -ne 0) {
+              throw "Installed BackgroundPXR runtime self-test failed with exit code $($runtime.ExitCode)."
+            }
+            if (-not (Test-Path backgroundpxr_runtime_selftest.txt)) {
+              throw 'Installed BackgroundPXR self-test report is missing.'
+            }
+            $selfTest = (Get-Content backgroundpxr_runtime_selftest.txt -Raw).Trim()
+            if ($selfTest -ne 'OK') {
+              throw "Installed BackgroundPXR runtime self-test did not return OK: $selfTest"
+            }
+          } finally {
+            Pop-Location
+          }
+
+          $uninstaller = Join-Path $installDir 'unins000.exe'
+          if (-not (Test-Path $uninstaller)) {
+            throw 'Installer did not create an uninstaller.'
+          }
+          $uninstall = Start-Process -FilePath $uninstaller -ArgumentList @(
+            '/VERYSILENT',
+            '/SUPPRESSMSGBOXES',
+            '/NORESTART'
+          ) -Wait -PassThru
+          if ($uninstall.ExitCode -ne 0) {
+            throw "Uninstaller failed with exit code $($uninstall.ExitCode)."
+          }
+
+          Start-Sleep -Seconds 2
+          if (Test-Path $exe) {
+            throw 'BackgroundPXR.exe still exists after silent uninstall.'
+          }
+
+      - name: Upload qualified installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BackgroundPXR-${{ env.VERSION }}-installer
+          path: |
+            installer-dist/BackgroundPXR-${{ env.VERSION }}-Setup.exe
+            installer-dist/BackgroundPXR-${{ env.VERSION }}-Setup.exe.sha256
+          retention-days: 30
+
+  publish-installer:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'installer-release:')
+    needs: installer
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: BackgroundPXR-1.0.0-installer
+          path: installer-dist
+
+      - name: Attach installer to stable v1.0.0 Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = 'v1.0.0'
+          $installer = 'installer-dist\BackgroundPXR-1.0.0-Setup.exe'
+          $checksum = 'installer-dist\BackgroundPXR-1.0.0-Setup.exe.sha256'
+          if (-not (Test-Path $installer) -or -not (Test-Path $checksum)) {
+            throw 'Qualified installer artifact is incomplete.'
+          }
+
+          gh release upload $tag $installer $checksum --clobber
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          gh release edit $tag --notes-file RELEASE_NOTES.md
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $assetNames = gh release view $tag --json assets --jq '.assets[].name'
+          foreach ($required in @(
+            'BackgroundPXR-1.0.0-Windows.zip',
+            'BackgroundPXR-1.0.0-Windows.zip.sha256',
+            'BackgroundPXR-1.0.0-Setup.exe',
+            'BackgroundPXR-1.0.0-Setup.exe.sha256'
+          )) {
+            if ($assetNames -notcontains $required) {
+              throw "Stable Release is missing required asset: $required"
+            }
+          }
